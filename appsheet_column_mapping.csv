@@ -1,0 +1,77 @@
+Table,Column,InSheet,InAppSheet,Notes
+Recovery,_RowNumber,N,Y,AppSheet meta: row number
+Recovery,UserEmail,Y,Y,
+Recovery,Muscle,Y,Y,
+Recovery,Fatigue_Percent,Y,Y,
+Recovery,Status,Y,Y,
+Recovery,_ComputedKey,N,Y,AppSheet generated key (virtual)
+
+ExerciceDB,Id,Y,Y,Primary key in sheet and AppSheet
+ExerciceDB,name,Y,Y,
+ExerciceDB,primary_muscle,Y,Y,
+ExerciceDB,secondary_muscles,Y,Y,
+ExerciceDB,core_engagement,Y,Y,
+ExerciceDB,unilateral,Y,Y,
+ExerciceDB,plyometric,Y,Y,
+ExerciceDB,isometric,Y,Y,
+ExerciceDB,knee_friendly,Y,Y,
+ExerciceDB,spine_load,Y,Y,
+ExerciceDB,body_category,Y,N,Sheet-only metadata
+ExerciceDB,type,Y,N,Sheet-only metadata
+ExerciceDB,level,Y,N,Sheet-only metadata
+ExerciceDB,impact,Y,N,Sheet-only metadata
+ExerciceDB,equipment,Y,Y,
+ExerciceDB,movement_pattern,Y,N,Sheet-only metadata
+ExerciceDB,tags,Y,N,Sheet-only metadata
+ExerciceDB,avoid_if_knee_issues,Y,N,Sheet-only metadata
+ExerciceDB,avoid_if_lower_back_issues,Y,N,Sheet-only metadata
+ExerciceDB,description,Y,N,Long text; AppSheet can show as details if added
+ExerciceDB,gif_url,Y,N,Media URL; consider surfacing in AppSheet if useful
+ExerciceDB,fallback_url,Y,N,Media URL(s)
+ExerciceDB,Fatigue,Y,N,Computed in sheet; consider migrating logic to Apps Script or AppSheet virtual columns
+
+Glide_Wod,ID,Y,Y,
+Glide_Wod,Order,Y,Y,
+Glide_Wod,Category,Y,Y,
+Glide_Wod,Muscles,Y,Y,
+Glide_Wod,Exercise,Y,Y,
+Glide_Wod,Equipment,Y,Y,
+Glide_Wod,Reps_Text,Y,Y,
+Glide_Wod,Weight_Sugg,Y,Y,
+Glide_Wod,Video_URL,Y,Y,
+Glide_Wod,Is_Done,Y,Y,Used by AppSheet to mark completion (boolean)
+Glide_Wod,UserEmail,Y,Y,
+
+History,Date,Y,Y,
+History,Order,Y,Y,
+History,Category,Y,Y,
+History,Muscles,Y,Y,
+History,Exercise,Y,Y,
+History,Equipment,Y,Y,
+History,Reps_Text,Y,Y,
+History,Weight_Sugg,Y,Y,
+History,Video_URL,Y,Y,
+History,Is_Done,Y,Y,
+History,UserEmail,Y,Y,
+
+Ref_Emails,Pseudo,Y,Y,
+Ref_Emails,Email,Y,Y,
+Ref_Emails,Related UserProfiles,N,Y,AppSheet ref/list virtual column
+
+UserProfile,ID,Y,Y,
+UserProfile,Email,Y,Y,
+UserProfile,Pseudo,Y,Y,
+UserProfile,Niveau,Y,Y,
+UserProfile,Materiel_dispo,Y,Y,
+UserProfile,Type_scéance_Voulue,Y,Y,
+UserProfile,Durée,Y,Y,
+UserProfile,Nombre_d'exercices,Y,Y,
+UserProfile,Sets,Y,Y,
+UserProfile,Age,Y,Y,
+UserProfile,Sexe,Y,N,Sheet-only metadata
+UserProfile,Titre1,Y,N,Repeated columns - review necessity
+
+# Notes:
+# - Columns marked InAppSheet=Y were captured from your AppSheet editor screenshots; if any table has more AppSheet columns, paste them and I will merge.
+# - For sheet-only columns marked as potential "remove/hide": consider moving large media fields (gif_url, fallback_url) to a separate reference sheet if AppSheet doesn't need them.
+# - Virtual/AppSheet-only columns (e.g., _ComputedKey, Related UserProfiles) are normal and should be kept in AppSheet only.
