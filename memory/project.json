@@ -1,7 +1,12 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.js", "appsscript.json"],
-  "last_update": null
-  "last_update": "2026-01-01"
+  "last_update": "2026-01-01T16:40:00Z",
+  "notes": {
+    "menu_present": "Spreadsheet UI still shows Player/Yoga menu entries despite code removal; spreadsheet reload or running onOpen is required to refresh the menu.",
+    "last_deployment": "@20 (deploy: remove UI + glide save)",
+    "saveWorkout": "Updated to use Glide_Wod (clears Is_Done and writes to History)",
+    "schema_dump_url": "https://docs.google.com/spreadsheets/d/1o0jp22IWRGJ5siqpEbNvCd5R6t-kcXaWoPVZ0kzgFPA/edit?gid=1264733125#gid=1264733125"
+  }
 }
 
