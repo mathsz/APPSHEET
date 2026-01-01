@@ -3,8 +3,8 @@
   "main_files": ["Code.js", "appsscript.json"],
   "last_update": "2026-01-01T16:40:00Z",
   "notes": {
-    "menu_present": "Spreadsheet UI still shows Player/Yoga menu entries despite code removal; spreadsheet reload or running onOpen is required to refresh the menu.",
-    "last_deployment": "@20 (deploy: remove UI + glide save)",
+    "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed at @22 — reload spreadsheet or run onOpen to refresh the menu.",
+    "last_deployment": "@22 (deploy: remove menu & functions)",
     "saveWorkout": "Updated to use Glide_Wod (clears Is_Done and writes to History)",
     "schema_dump_url": "https://docs.google.com/spreadsheets/d/1o0jp22IWRGJ5siqpEbNvCd5R6t-kcXaWoPVZ0kzgFPA/edit?gid=1264733125#gid=1264733125"
   }
