@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+        background-color: #f4f4f4;
+        user-select: none; /* Empêche la sélection de texte */
+      }
+      .timer-display {
+        font-size: 80px;
+        font-weight: bold;
+        color: #333;
+        margin: 20px 0;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      button {
+        padding: 15px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background-color: #2196F3;
+        color: white;
+        transition: 0.2s;
+      }
+      button:hover { background-color: #1976D2; }
+      button:active { transform: scale(0.98); }
+      
+      .btn-time { font-weight: bold; }
+      .btn-stop { background-color: #f44336; grid-column: span 3; }
+      .btn-stop:hover { background-color: #d32f2f; }
+
+      .finished {
+        background-color: #ffcccc; 
+        animation: flash 1s infinite;
+      }
+
+      @keyframes flash {
+        0% { background-color: #ffcccc; }
+        50% { background-color: #ffeb3b; } /* Jaune clignotant */
+        100% { background-color: #ffcccc; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="display" class="timer-display">00:00</div>
+
+    <div class="grid-container">
+      <button class="btn-time" onclick="startTimer(30)">30 sec</button>
+      <button class="btn-time" onclick="startTimer(45)">45 sec</button>
+      <button class="btn-time" onclick="startTimer(60)">60 sec</button>
+      
+      <button class="btn-time" onclick="startTimer(75)">75 sec</button>
+      <button class="btn-time" onclick="startTimer(90)">90 sec</button>
+      <button class="btn-time" onclick="startTimer(105)">105 sec</button>
+      
+      <button class="btn-time" style="grid-column: span 3;" onclick="startTimer(120)">120 sec (2 min)</button>
+
+      <button class="btn-stop" onclick="resetTimer()">STOP / RESET</button>
+    </div>
+
+    <script>
+      let countdown;
+      let timeLeft = 0;
+      let audioCtx; // Contexte audio
+      const display = document.getElementById('display');
+      const body = document.body;
+
+      function startTimer(seconds) {
+        clearInterval(countdown);
+        body.classList.remove("finished");
+        
+        // Initialiser l'audio au clic (nécessaire pour les navigateurs modernes)
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        timeLeft = seconds;
+        updateDisplay();
+
+        countdown = setInterval(() => {
+          timeLeft--;
+          updateDisplay();
+
+          if (timeLeft <= 0) {
+            clearInterval(countdown);
+            timerFinished();
+          }
+        }, 1000);
+      }
+
+      function resetTimer() {
+        clearInterval(countdown);
+        timeLeft = 0;
+        updateDisplay();
+        body.classList.remove("finished");
+        // Si une alarme sonne, on pourrait vouloir l'arrêter, 
+        // mais avec la méthode simple ci-dessous, elle s'arrête seule.
+      }
+
+      function updateDisplay() {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        display.innerText = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+      }
+
+      // --- Logique de l'Alarme ---
+
+      async function timerFinished() {
+        display.innerText = "00:00";
+        body.classList.add("finished");
+        
+        // Séquence : 3 fois (4 bips)
+        for (let i = 0; i < 3; i++) {
+            await playQuadrupleBeep();
+            await wait(800); // Pause longue entre les séries
+        }
+      }
+
+      async function playQuadrupleBeep() {
+        // 4 bips rapides
+        for (let j = 0; j < 4; j++) {
+            beep();
+            await wait(150); // Pause courte entre les bips (très rapide)
+        }
+      }
+
+      function beep() {
+        if (!audioCtx) return;
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        // Configuration du son
+        oscillator.type = "square"; // Son type "buzzer"
+        oscillator.frequency.value = 880; // Fréquence (La5), assez aigu
+        
+        // Volume (pour ne pas exploser les oreilles)
+        gainNode.gain.value = 0.1;
+
+        oscillator.start();
+        // Dure 0.1 seconde (très court)
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      }
+
+      // Petite fonction utilitaire pour faire des pauses
+      function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+    </script>
+  </body>
+</html>

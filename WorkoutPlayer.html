@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* STYLE IDENTIQUE A AVANT */
+    body { font-family: Roboto, sans-serif; background: #121212; color: white; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+    #loader { margin-top: 40vh; font-size: 18px; color: #8ab4f8; font-weight: bold; }
+    #error-msg { display:none; color: #ff5252; margin-top: 20px; text-align: center; }
+    #player { display: none; width: 100%; max-width: 420px; gap: 15px; flex-direction: column; }
+    .card { background: #1e1e1e; border-radius: 12px; padding: 15px; border-bottom: 4px solid #8ab4f8; }
+    .group-tag { font-size: 11px; color: #9aa0a6; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    h2 { font-size: 20px; color: #8ab4f8; margin: 5px 0 10px; }
+    .video-btn { background: #c4302b; color: white; padding: 10px; border-radius: 8px; text-decoration: none; display: block; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 15px; }
+    .set-block { background: #2d332d; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+    .set-block h3 { margin: 0 0 6px; font-size: 14px; color: #81c995; }
+    .input-row { display: flex; gap: 8px; }
+    .input-box { flex: 1; }
+    .input-box label { font-size: 12px; color: #9aa0a6; display: block; margin-bottom: 3px; }
+    .input-box input { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 2px solid #3c4043; background: #000; color: #8ab4f8; font-size: 18px; text-align: center; font-weight: bold; }
+    .btn-main { background: #8ab4f8; color: #121212; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 18px; width: 100%; cursor: pointer; margin-top: 10px; }
+    .nav-btns { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-nav { background: #3c4043; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; flex: 1; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div id="loader">Chargement... ⚡</div>
+  <div id="error-msg"></div>
+
+  <div id="player">
+    <div class="card">
+      <p id="group" class="group-tag">GROUPE</p>
+      <h2 id="name">Nom</h2>
+      <a id="ytLink" href="#" target="_blank" class="video-btn">🎬 VIDÉO</a>
+
+      <div class="set-block">
+        <h3>SET 1</h3>
+        <div class="input-row">
+          <div class="input-box"><label>REPS</label><input type="text" id="reps1"></div>
+          <div class="input-box"><label>POIDS (LB)</label><input type="text" id="load1"></div>
+        </div>
+      </div>
+      <div class="set-block">
+        <h3>SET 2</h3>
+        <div class="input-row">
+          <div class="input-box"><label>REPS</label><input type="text" id="reps2"></div>
+          <div class="input-box"><label>POIDS (LB)</label><input type="text" id="load2"></div>
+        </div>
+      </div>
+      <div class="set-block">
+        <h3>SET 3</h3>
+        <div class="input-row">
+          <div class="input-box"><label>REPS</label><input type="text" id="reps3"></div>
+          <div class="input-box"><label>POIDS (LB)</label><input type="text" id="load3"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-main" onclick="save()">✅ VALIDER</button>
+
+    <div class="nav-btns">
+      <button class="btn-nav" onclick="change(-1)">⏮</button>
+      <button class="btn-nav" onclick="change(1)">⏭</button>
+    </div>
+  </div>
+<script>
+  let workout = [];
+  let idx = 0;
+
+  window.onload = function() {
+    console.log("Démarrage du Player...");
+    
+    // Appel au serveur
+    google.script.run
+      .withSuccessHandler(onSuccess)
+      .withFailureHandler(onFailure) // Assurez-vous d'avoir la fonction onFailure
+      .getWodData(); 
+  };
+
+  function onSuccess(data) {
+    // ✅ C'est la bonne ligne !
+    console.log("Received data: " + JSON.stringify(data, null, 2));
+    
+    // Ici, vous mettrez votre logique pour utiliser 'data'
+    // ex: workout = data;
+  }
+
+  // N'oubliez pas d'ajouter cette fonction pour voir les erreurs s'il y en a
+  function onFailure(error) {
+    console.error("Erreur serveur : " + error.message);
+  }
+</script>
+    if (!data || data.length === 0) {
+      document.getElementById("loader").innerText = "Aucun exercice trouvé dans l'onglet Wod !";
+      return;
+    }
+
+    workout = data;
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("player").style.display = "flex";
+    update();
+  }
+
+  function onFailure(error) {
+    document.getElementById("loader").style.display = "none";
+    const errDiv = document.getElementById("error-msg");
+    errDiv.innerText = "Erreur : " + error.message;
+    errDiv.style.display = "block";
+  }
+
+  function update() {
+    if (!workout[idx]) return;
+    const ex = workout[idx];
+
+    document.getElementById("group").innerText = (idx + 1) + "/" + workout.length + " - " + ex.group;
+    document.getElementById("name").innerText = ex.name;
+    
+    const btnVideo = document.getElementById("ytLink");
+    if (ex.videoUrl && ex.videoUrl !== "#") {
+      btnVideo.href = ex.videoUrl;
+      btnVideo.style.display = "block";
+    } else {
+      btnVideo.style.display = "none";
+    }
+
+    // Utilisation des clés r1, w1 vues dans votre log
+    document.getElementById("reps1").value = ex.r1 || ""; 
+    document.getElementById("load1").value = ex.w1 || "";
+    
+    document.getElementById("reps2").value = ex.r2 || ""; 
+    document.getElementById("load2").value = ex.w2 || "";
+    
+    document.getElementById("reps3").value = ex.r3 || ""; 
+    document.getElementById("load3").value = ex.w3 || "";
+  }
+
+  function save() {
+    const ex = workout[idx];
+    // Récupération des valeurs saisies
+    const r1 = document.getElementById("reps1").value;
+    const w1 = document.getElementById("load1").value;
+    const r2 = document.getElementById("reps2").value;
+    const w2 = document.getElementById("load2").value;
+    const r3 = document.getElementById("reps3").value;
+    const w3 = document.getElementById("load3").value;
+
+    // Mise à jour locale (pour mémoire)
+    ex.r1=r1; ex.w1=w1; ex.r2=r2; ex.w2=
