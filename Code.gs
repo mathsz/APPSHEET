@@ -1,27 +1,29 @@
 // FITBOOK - SCRIPT ULTIME (Version Validée - Fix Pilates Tags)
 
 /* ===================== CONFIGURATION GLOBALE ===================== */
-const SHEET_DB = "ExerciceDB";
-const SHEET_GEN = "UserProfile";
-const SHEET_WOD = "Wod"; 
-const SHEET_HIST = "History";
-const SHEET_DASH = "📊 Recovery";
-const SHEET_GLIDE = "Glide_Wod"; 
+if (typeof SHEET_DB === 'undefined') {
+  var SHEET_DB = "ExerciceDB";
+  var SHEET_GEN = "UserProfile";
+  var SHEET_WOD = "Wod"; 
+  var SHEET_HIST = "History";
+  var SHEET_DASH = "📊 Recovery";
+  var SHEET_GLIDE = "Glide_Wod"; 
 
-const RECIPES_START_ROW = 36;
-const RECIPES_ROWS = 100;
+  var RECIPES_START_ROW = 36;
+  var RECIPES_ROWS = 100;
 
-const DB_COL_NAME = 0;   
-const DB_COL_ISO = 3;    
-const DB_COL_EQUIP = 6;  
-const DB_COL_CODE = 7;   
-const DB_COL_FATIGUE = 23;
+  var DB_COL_NAME = 0;   
+  var DB_COL_ISO = 3;    
+  var DB_COL_EQUIP = 6;  
+  var DB_COL_CODE = 7;   
+  var DB_COL_FATIGUE = 23;
 
-const MUSCLE_RECOVERY = {
-  "Chest": 48, "Back": 48, "Legs": 72, "Shoulders": 48, 
-  "Biceps": 24, "Triceps": 24, "Abs": 24, "Core": 24,
-  "Quads": 72, "Hamstrings": 72, "Glutes": 72, "Calves": 48
-};
+  var MUSCLE_RECOVERY = {
+    "Chest": 48, "Back": 48, "Legs": 72, "Shoulders": 48, 
+    "Biceps": 24, "Triceps": 24, "Abs": 24, "Core": 24,
+    "Quads": 72, "Hamstrings": 72, "Glutes": 72, "Calves": 48
+  };
+}
 
 /* ===================== MENU ===================== */
 function onOpen() {
