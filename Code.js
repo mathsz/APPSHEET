@@ -627,6 +627,15 @@ function replaceSelectedExercise() {
 function saveWorkout() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const wod = ss.getSheetByName(SHEET_WOD);
+  if (!wod) {
+    SpreadsheetApp.getUi().alert('No "Wod" sheet found. Nothing to save.');
+    return;
+  }
+  if (wod.getLastRow() < 2) {
+    SpreadsheetApp.getUi().alert('No exercises present in the "Wod" sheet.');
+    return;
+  }
+
   let hist = ss.getSheetByName(SHEET_HIST);
   if (!hist) { 
     hist = ss.insertSheet(SHEET_HIST); 
