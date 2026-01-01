@@ -6,3 +6,13 @@ function auditTarget() { return auditSampleRows(); }
 function moveSeedGlide() {
   return moveSampleRows('Glide_Wod');
 }
+
+// Wrapper to create the Sets sheet
+function createSets() {
+  return createSetsSheet();
+}
+
+// Wrapper to add a test set (helpful to verify the AppSheet table mapping)
+function addTestSetWrapper(glideId, setNumber, reps, load, notes) {
+  return addTestSet(glideId, setNumber, reps, load, notes);
+}
