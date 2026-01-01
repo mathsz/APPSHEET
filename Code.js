@@ -27,7 +27,6 @@ const MUSCLE_RECOVERY = {
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('FITBOOK')
     .addItem('⚡ GÉNÉRER LA SÉANCE', 'generateWorkout') 
-    .addItem('▶️ LANCER LE PLAYER', 'openWorkoutPlayer')
     .addSeparator()
     .addItem('🔄 Mettre à jour les Menus', 'refreshCategoryDropdowns')
     .addSeparator()
@@ -35,7 +34,6 @@ function onOpen() {
       .addItem('📊 Mettre à jour Dashboard', 'testUpdateDash')
       .addItem('♻️ Reset Fatigue', 'resetFatigueTest'))
     .addSeparator()
-    .addItem('🧘 MODE YOGA', 'openYogaPlayer')
     .addItem('✅ Valider (Historique)', 'saveWorkout')
     .addToUi();
 }
@@ -668,21 +666,7 @@ function resetFatigueTest() {
   updateRecoveryDashboard(Session.getActiveUser().getEmail());
 }
 
-function openWorkoutPlayer() {
-  try { 
-    SpreadsheetApp.getUi().showSidebar(
-      HtmlService.createHtmlOutputFromFile('WorkoutPlayer').setTitle('🏋️ PLAYER').setWidth(400)
-    ); 
-  } catch (e) { console.error(e); }
-}
 
-function openYogaPlayer() {
-  try { 
-    SpreadsheetApp.getUi().showModalDialog(
-      HtmlService.createHtmlOutputFromFile('YogaPlayer').setTitle('🧘 YOGA').setWidth(450).setHeight(600), 'Mode Yoga'
-    ); 
-  } catch (e) { console.error(e); }
-}
 
 function getWodData() {
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_WOD);
