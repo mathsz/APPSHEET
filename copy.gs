@@ -770,7 +770,7 @@ function updateExerciseDetails(sheet, row, exerciseName) {
   let equip = exoData[DB_COL_EQUIP];
   let searchUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(cleanName);
   let finalName = cleanName + " [" + equip + "]";
-  let formula = `=HYPERLINK("${searchUrl}"; "${finalName.replace(/"/g, '""')} 📺`)`;
+  let formula = `=HYPERLINK("${searchUrl}"; "${finalName.replace(/"/g, '""')} 📺")`;
   
   sheet.getRange(row, 4).setFormula(formula);
   sheet.getRange(row + 1, 4, 3, 1).setValue(repsText);
