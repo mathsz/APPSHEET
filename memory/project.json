@@ -1,0 +1,7 @@
+{
+  "description": "Automation agent for Fitbook Apps Script",
+  "main_files": ["Code.js", "appsscript.json"],
+  "last_update": null
+  "last_update": "2026-01-01"
+}
+
