@@ -626,52 +626,35 @@ function replaceSelectedExercise() {
 
 function saveWorkout() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const glide = ss.getSheetByName(SHEET_GLIDE);
-  if (!glide) {
-    SpreadsheetApp.getUi().alert('No "' + SHEET_GLIDE + '" sheet found. Nothing to save.');
-    return;
-  }
-  if (glide.getLastRow() < 2) {
-    SpreadsheetApp.getUi().alert('No exercises present in the "' + SHEET_GLIDE + '" sheet.');
-    return;
-  }
-
+  const wod = ss.getSheetByName(SHEET_WOD);
   let hist = ss.getSheetByName(SHEET_HIST);
   if (!hist) { 
     hist = ss.insertSheet(SHEET_HIST); 
-    hist.appendRow(["Date", "Order", "Category", "Muscles", "Exercise", "Equipment", "Reps_Text", "Weight_Sugg", "Video_URL", "Is_Done", "UserEmail"]); 
+    hist.appendRow(["Date", "Type", "Category", "Muscles", "Exercice", "Equip", "Reps", "Load", "Video", "Done", "UserEmail"]); 
   }
 
-  const lastRow = glide.getLastRow();
-  const data = glide.getRange(2, 1, lastRow - 1, 11).getValues();
+  const data = wod.getRange(2, 1, wod.getLastRow() - 1, 5).getValues();
   let saved = 0;
+  const email = Session.getActiveUser().getEmail();
 
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i];
-    const isDone = row[9]; // Is_Done column (0-based index 9)
-    if (isDone === true || String(isDone).toLowerCase() === 'true') {
-      const order = row[1] || "";
-      const category = row[2] || "";
-      const muscles = row[3] || "";
-      const exercise = row[4] || "";
-      const equipment = row[5] || "";
-      const reps = row[6] || "";
-      const load = row[7] || "";
-      const video = row[8] || "";
-      const userEmail = row[10] || Session.getActiveUser().getEmail();
-
-      hist.appendRow([new Date(), order, category, muscles, exercise, equipment, reps, load, video, true, userEmail]);
-      // clear Is_Done for the processed row to avoid double-processing
-      glide.getRange(i + 2, 10).setValue(false);
+  for (let i = 0; i < data.length; i += 5) {
+    if (data[i][0] === true) {
+      let rawText = String(data[i][3]);
+      let cleanName = rawText.split(" [")[0].replace(" 📺", "");
+      let cleanEquip = rawText.includes("[") ? rawText.split("[")[1].split("]")[0] : "—";
+      
+      // Adaptation format colonne
+      hist.appendRow([new Date(), "Manual", "", "", cleanName, cleanEquip, data[i + 1][3], data[i + 1][4], "", true, email]);
       saved++;
     }
   }
-
-  if (saved > 0) {
-    SpreadsheetApp.getActive().toast(saved + " exos sauvés depuis " + SHEET_GLIDE + "!");
-    updateRecoveryDashboard(Session.getActiveUser().getEmail());
-  } else {
-    SpreadsheetApp.getUi().alert("No completed exercises (Is_Done) found in " + SHEET_GLIDE + ".");
+  
+  if (saved > 0) { 
+    wod.getRange("A2:A").removeCheckboxes(); 
+    SpreadsheetApp.getActive().toast(saved + " exos sauvés !"); 
+    updateRecoveryDashboard(email); 
+  } else { 
+    SpreadsheetApp.getUi().alert("Cochez les cases (Col A) des exos faits."); 
   }
 }
 
