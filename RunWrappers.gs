@@ -16,3 +16,14 @@ function createSets() {
 function addTestSetWrapper(glideId, setNumber, reps, load, notes) {
   return addTestSet(glideId, setNumber, reps, load, notes);
 }
+
+// Temporary helper: add a sample test set (run from Apps Script editor)
+function sampleAddTestSet() {
+  // Replace the Glide_Wod ID below with a real ID from your Glide_Wod sheet if needed
+  const sampleGlideId = 'testuser@example.com_1';
+  const setNumber = 1;
+  const reps = '10';
+  const load = '—';
+  const notes = 'Seeded by automation agent';
+  return addTestSetWrapper(sampleGlideId, setNumber, reps, load, notes);
+}
