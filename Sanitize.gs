@@ -82,3 +82,33 @@ function moveSampleRows(sheetName) {
 
   return {moved: toMove.length, backupSheet: backupName, seedSheet: seedName};
 }
+
+/**
+ * Create `Sets` sheet with headers if missing.
+ * Columns: ID | Glide_Wod_ID | SetNumber | Reps | Load | Notes
+ */
+function createSetsSheet() {
+  const ss = (typeof getSs === 'function') ? getSs() : SpreadsheetApp.getActive();
+  const name = 'Sets';
+  const existing = ss.getSheetByName(name);
+  if (existing) return {sheet: name, created: false};
+  const sh = ss.insertSheet(name);
+  const header = ['ID','Glide_Wod_ID','SetNumber','Reps','Load','Notes'];
+  sh.getRange(1,1,1,header.length).setValues([header]);
+  sh.setFrozenRows(1);
+  return {sheet: name, created: true};
+}
+
+/**
+ * Append a set row to `Sets`. Generates a simple unique ID if none provided.
+ */
+function addTestSet(glideId, setNumber, reps, load, notes) {
+  const ss = (typeof getSs === 'function') ? getSs() : SpreadsheetApp.getActive();
+  const name = 'Sets';
+  let sh = ss.getSheetByName(name);
+  if (!sh) createSetsSheet();
+  sh = ss.getSheetByName(name);
+  const id = 's_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+  sh.appendRow([id, glideId || '', setNumber || 1, reps || '', load || '', notes || '']);
+  return {id: id};
+}
