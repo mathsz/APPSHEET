@@ -816,3 +816,17 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({status: "error", msg: err.toString()}));
   }
 }
+
+// Temporary, token-protected GET endpoint to trigger safe operations (one-shot use)
+function doGet(e) {
+  try {
+    const params = e && e.parameter ? e.parameter : {};
+    if (params.action === 'CREATE_SETS' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = createSetsSheet();
+      return ContentService.createTextOutput(JSON.stringify({status: 'created', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({status: 'ignored'})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
