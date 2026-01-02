@@ -33,3 +33,5 @@ function ensureSetsSchema() { return ensureSetsSchemaWrapper(); }
 function applySetsDataValidation() { return applySetsDataValidationWrapper(); }
 function autoAssignExercises() { return autoAssignExercisesWrapper(); }
 function replaceExercise(setId) { return replaceExerciseWrapper(setId); }
+function addExerciseColumn() { return addExerciseColumnIfMissingWrapper(); }
+function ensureExoDbKey() { return ensureExerciceDBKey(); }

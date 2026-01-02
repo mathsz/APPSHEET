@@ -1,7 +1,7 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
-  "last_update": "2026-01-01T18:40:00Z",
+  "last_update": "2026-01-01T19:05:00Z",
   "notes": {
     "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed previously — reload spreadsheet or run onOpen to refresh the menu.",
     "recent_deployments": "versions up through 27 created (temporary web and API deployments used for testing)",
@@ -12,7 +12,12 @@
     "copy_renamed": "Temporary copy copy.gs was renamed to Code.gs and pushed to project; original Code.js was archived; backup JS files were renamed to .bak to avoid duplicate parsing by Apps Script.",
     "globals_guard": "Added guard to prevent duplicate-declaration errors for global constants (SHEET_DB etc.).",
     "sets_helpers": "Added SetsHelpers.gs with ensureSetsSchema, applySetsDataValidation, autoAssignExercises, replaceExerciseForSet + wrappers; exposed doGet endpoints to run these tasks; added sampleAddTestSet and seeded a test set.",
-    "last_actions": "Deployed version 31 with temporary doGet actions; seeded test sets via SEED_TEST_SET; review AppSheet UI to wire Exercise Ref and actions."
+    "add_exercise_column": "Added addExerciseColumnIfMissing() and wrapper + ADD_EXERCISE_COLUMN doGet action; can insert Exercise column after Glide_Wod_ID if missing.",
+    "auto_assign": "Ran AUTO_ASSIGN_EXERCISES and assigned 7 rows (returned numeric values from ExerciceDB); recommend verifying that AppSheet uses the same key for Exercise.",
+    "dump_sets": "DUMP_SETS now shows Exercise values for seeded rows (sample rows updated).",
+    "last_actions": "Deployed versions up through 39 with debug and sets helpers; recently ran ENSURE_SETS_SCHEMA (updated=true) and AUTO_ASSIGN_EXERCISES (assigned rows).",
+    "appsheet_view": "View appears broken after schema changes; likely needs table schema refresh in AppSheet and Exercise column set to a Ref (key mapping must match values written to sheet). I can apply AppSheet UI changes if you confirm the editor account and want me to proceed.",
+    "sets_helpers_update": "Updated SetsHelpers: findExerciseForGlideId now returns ExerciceDB key (ID) when available; added getExerciseDisplayName() to resolve human-friendly names; dumpExerciceDB now includes 'id' field; added ensureExerciceDBKey() helper and RunWrappers.ensureExoDbKey(). Also added Exercise_Display support (virtual recommended in AppSheet)."
   }
 }
 

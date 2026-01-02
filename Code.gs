@@ -853,6 +853,11 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (params.action === 'ENSURE_EXODB_KEY' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = ensureExerciceDBKey();
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (params.action === 'DUMP_GLIDE' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101' && params.glideId) {
       const result = getGlideInfo(params.glideId);
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
@@ -865,6 +870,11 @@ function doGet(e) {
 
     if (params.action === 'FORCE_ASSIGN_TESTS' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
       const result = forceAssignTestUserSets();
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (params.action === 'ADD_EXERCISE_COLUMN' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = addExerciseColumnIfMissing();
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
