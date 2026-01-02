@@ -858,6 +858,11 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (params.action === 'FILL_EXODB_IDS' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = fillExerciceDBSequentialIds();
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (params.action === 'DUMP_GLIDE' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101' && params.glideId) {
       const result = getGlideInfo(params.glideId);
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);

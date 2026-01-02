@@ -1,7 +1,7 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
-  "last_update": "2026-01-01T19:05:00Z",
+  "last_update": "2026-01-01T19:40:00Z",
   "notes": {
     "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed previously — reload spreadsheet or run onOpen to refresh the menu.",
     "recent_deployments": "versions up through 27 created (temporary web and API deployments used for testing)",
@@ -17,7 +17,9 @@
     "dump_sets": "DUMP_SETS now shows Exercise values for seeded rows (sample rows updated).",
     "last_actions": "Deployed versions up through 39 with debug and sets helpers; recently ran ENSURE_SETS_SCHEMA (updated=true) and AUTO_ASSIGN_EXERCISES (assigned rows).",
     "appsheet_view": "View appears broken after schema changes; likely needs table schema refresh in AppSheet and Exercise column set to a Ref (key mapping must match values written to sheet). I can apply AppSheet UI changes if you confirm the editor account and want me to proceed.",
-    "sets_helpers_update": "Updated SetsHelpers: findExerciseForGlideId now returns ExerciceDB key (ID) when available; added getExerciseDisplayName() to resolve human-friendly names; dumpExerciceDB now includes 'id' field; added ensureExerciceDBKey() helper and RunWrappers.ensureExoDbKey(). Also added Exercise_Display support (virtual recommended in AppSheet)."
+    "sets_helpers_update": "Updated SetsHelpers: findExerciseForGlideId now returns ExerciceDB key (ID) when available; added getExerciseDisplayName() to resolve human-friendly names; dumpExerciceDB now includes 'id' field; added ensureExerciceDBKey() helper and RunWrappers.ensureExoDbKey(). Also added Exercise_Display support (virtual recommended in AppSheet).",
+    "ensure_exodb": "Ran ENSURE_EXODB_KEY (deployment 41) — header exists; endpoint returned rows:420 filled:0. DUMP_EXERCISEDB showed 'id' cells empty strings; added a helper to force-fill sequential IDs and will run it next.",
+    "next_steps": "Will run fillExerciceDBSequentialIds() to populate numeric IDs, then update AppSheet: set ExerciceDB key to ID, set label to name, set Sets.Exercise as Ref and a virtual display column, add Valid_If filters and actions."
   }
 }
 

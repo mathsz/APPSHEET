@@ -311,7 +311,7 @@ function ensureExerciceDBKey() {
   const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(h => String(h || '').trim());
   let idIdx = headers.map(h=>h.toLowerCase()).indexOf('id');
 
-  // If ID header missing, insert as first column and fill sequential keys
+  // If ID header missing, insert as first column (do not populate yet)
   if (idIdx === -1) {
     sh.insertColumnBefore(1);
     sh.getRange(1,1).setValue('ID');
@@ -336,6 +336,27 @@ function ensureExerciceDBKey() {
 
   return {status: 'ok', idCol: idIdx+1, rows: rows-1, filled: filled};
 }
+
+// Force-fill ExerciceDB ID values sequentially (row-1) regardless of current content
+function fillExerciceDBSequentialIds() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('ExerciceDB');
+  if (!sh) return {error: 'ExerciceDB missing'};
+  const rows = sh.getLastRow();
+  if (rows < 2) return {status: 'no_rows'};
+  // Ensure ID header exists at column 1
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(h => String(h || '').trim());
+  if (headers[0].toLowerCase() !== 'id') {
+    sh.insertColumnBefore(1);
+    sh.getRange(1,1).setValue('ID');
+  }
+  const values = [];
+  for (let r=2; r<=rows; r++) values.push([r-1]);
+  sh.getRange(2,1,values.length,1).setValues(values);
+  return {status: 'filled', rows: values.length};
+}
+
+function fillExerciceDBSequentialIdsWrapper() { return fillExerciceDBSequentialIds(); }
 
 function forceAssignTestUserSets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
