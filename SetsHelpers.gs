@@ -89,13 +89,13 @@ function findExerciseForGlideId(glideId) {
   const equipDbIdx = dbHeader.indexOf('equipment') !== -1 ? dbHeader.indexOf('equipment') : dbHeader.indexOf('equip');
   const primaryIdx = dbHeader.indexOf('primary_muscle') !== -1 ? dbHeader.indexOf('primary_muscle') : dbHeader.indexOf('primary') !== -1 ? dbHeader.indexOf('primary') : -1;
 
-  const idIdx = dbHeader.indexOf('id') !== -1 ? dbHeader.indexOf('id') : dbHeader.indexOf('identifier') !== -1 ? dbHeader.indexOf('identifier') : -1;
+  const idDbIdx = dbHeader.indexOf('id') !== -1 ? dbHeader.indexOf('id') : dbHeader.indexOf('identifier') !== -1 ? dbHeader.indexOf('identifier') : -1;
 
   let candidates = [];
   for (let i=1;i<dbData.length;i++) {
     const r = dbData[i];
     const rName = String(r[nameIdx] || '').trim();
-    const rId = idIdx !== -1 ? String(r[idIdx] || '').trim() : (rName || '');
+    const rId = idDbIdx !== -1 ? String(r[idDbIdx] || '').trim() : (rName || '');
     const rEquip = equipDbIdx !== -1 ? String(r[equipDbIdx] || '').toLowerCase() : '';
     const rPrimary = primaryIdx !== -1 ? String(r[primaryIdx] || '').toLowerCase() : '';
 
@@ -111,7 +111,7 @@ function findExerciseForGlideId(glideId) {
     for (let i=1;i<dbData.length;i++) {
       const r = dbData[i];
       const rName = String(r[nameIdx] || '').trim();
-      const rId = idIdx !== -1 ? String(r[idIdx] || '').trim() : (rName || '');
+      const rId = idDbIdx !== -1 ? String(r[idDbIdx] || '').trim() : (rName || '');
       const rEquip = equipDbIdx !== -1 ? String(r[equipDbIdx] || '').toLowerCase() : '';
       if ((rName || rId) && rEquip && equip && rEquip.includes(equip)) candidates.push({id: rId, name: rName});
     }
@@ -121,7 +121,7 @@ function findExerciseForGlideId(glideId) {
     for (let i=1;i<dbData.length;i++) {
       const r = dbData[i];
       const rName = String(r[nameIdx] || '').trim();
-      const rId = idIdx !== -1 ? String(r[idIdx] || '').trim() : (rName || '');
+      const rId = idDbIdx !== -1 ? String(r[idDbIdx] || '').trim() : (rName || '');
       if (rName || rId) candidates.push({id: rId, name: rName});
     }
   }
@@ -309,16 +309,32 @@ function ensureExerciceDBKey() {
   const sh = ss.getSheetByName('ExerciceDB');
   if (!sh) return {error: 'ExerciceDB missing'};
   const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(h => String(h || '').trim());
-  const idIdx = headers.map(h=>h.toLowerCase()).indexOf('id');
-  if (idIdx !== -1) return {status: 'already', idCol: idIdx+1};
-  // insert ID as first column and populate sequential numeric keys
-  sh.insertColumnBefore(1);
-  sh.getRange(1,1).setValue('ID');
+  let idIdx = headers.map(h=>h.toLowerCase()).indexOf('id');
+
+  // If ID header missing, insert as first column and fill sequential keys
+  if (idIdx === -1) {
+    sh.insertColumnBefore(1);
+    sh.getRange(1,1).setValue('ID');
+    idIdx = 0;
+  }
+
+  // Fill missing ID values with row-based sequential keys (row-1)
   const rows = sh.getLastRow();
-  const values = [];
-  for (let r=2; r<=rows; r++) { values.push([r-1]); }
-  if (values.length > 0) sh.getRange(2,1,values.length,1).setValues(values);
-  return {status: 'inserted', rows: values.length};
+  const valuesToSet = [];
+  let filled = 0;
+  const existing = sh.getRange(2, idIdx+1, rows-1, 1).getValues();
+  for (let r=0; r<existing.length; r++) {
+    const val = String(existing[r][0] || '').trim();
+    if (val === '') {
+      valuesToSet.push([r+1]);
+      filled++;
+    } else {
+      valuesToSet.push([existing[r][0]]);
+    }
+  }
+  if (valuesToSet.length > 0) sh.getRange(2, idIdx+1, valuesToSet.length,1).setValues(valuesToSet);
+
+  return {status: 'ok', idCol: idIdx+1, rows: rows-1, filled: filled};
 }
 
 function forceAssignTestUserSets() {
