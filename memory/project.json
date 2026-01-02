@@ -3,6 +3,18 @@
   "main_files": ["Code.gs", "appsscript.json"],
   "last_update": "2026-01-02T21:25:00Z",
   "notes": {
+    "milestones": [
+      {
+        "date": "2026-01-02",
+        "name": "Milestone: TimerHIIT stable + repo cleanup",
+        "summary": [
+          "Apps Script files confirmed via editor after clasp push.",
+          "Timer restored as Timer.html; dedicated HIIT page exists as TimerHIIT.html.",
+          "Web app redeployed to version 112; page=timerhiit now serves HTML (no {status:ignored}).",
+          "GitHub repository cleaned: removed backups/exports; added .gitignore; pushed clean state."
+        ]
+      }
+    ],
     "ops_rule_clasp_sync": {
       "date": "2026-01-02",
       "rule": "When behavior looks stale after a clasp push, always verify the file list in the Apps Script editor immediately. The editor can fail to refresh / show newly pushed files, which can mislead debugging. If the list is not updated, treat it as a sync/project mismatch (wrong scriptId, cached editor, or push did not target the expected project) before doing more deployments."
