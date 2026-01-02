@@ -230,6 +230,55 @@ function dumpExerciceDB(limit) {
   return out;
 }
 
+// Force-assign a random exercise to a set regardless of matching
+function forceAssignAnyExerciseToSet(setId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Sets');
+  const db = ss.getSheetByName('ExerciceDB');
+  if (!sh || !db) return {error: 'missing sheet'};
+  const data = sh.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const idIdx = headers.indexOf('ID');
+  const exIdx = headers.indexOf('Exercise');
+  const dbData = db.getDataRange().getValues();
+  const dbHeader = dbData[0].map(h => String(h || '').trim());
+  const nameIdx = dbHeader.indexOf('nom complet') !== -1 ? dbHeader.indexOf('nom complet') : dbHeader.indexOf('name') !== -1 ? dbHeader.indexOf('name') : 0;
+  // pick random non-empty name
+  let candidates = [];
+  for (let i=1;i<dbData.length;i++) {
+    const rName = String(dbData[i][nameIdx] || '').trim();
+    if (rName) candidates.push(rName);
+  }
+  if (candidates.length === 0) return {error: 'no exercises in DB'};
+  const pick = candidates[Math.floor(Math.random()*candidates.length)];
+  for (let i=1;i<data.length;i++) {
+    if (String(data[i][idIdx]) === String(setId)) {
+      sh.getRange(i+1, exIdx+1).setValue(pick);
+      return {row: i+1, exercise: pick};
+    }
+  }
+  return {error: 'set not found'};
+}
+
+function forceAssignTestUserSets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Sets');
+  if (!sh) return {error: 'sets missing'};
+  const data = sh.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const idIdx = headers.indexOf('ID');
+  const glideIdx = headers.indexOf('Glide_Wod_ID');
+  const out = [];
+  for (let i=1;i<data.length;i++) {
+    const glide = String(data[i][glideIdx] || '');
+    if (glide.indexOf('testuser@example.com_1') !== -1) {
+      const res = forceAssignAnyExerciseToSet(String(data[i][idIdx]));
+      out.push(res);
+    }
+  }
+  return out;
+}
+
 // Add a doPost action hook to call replace via webhook
 function handleReplaceFromPost(data) {
   if (!data || !data.setId) return {status: 'error', msg: 'missing setId'};
