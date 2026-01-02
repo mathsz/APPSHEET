@@ -102,6 +102,23 @@ function findExerciseForGlideId(glideId) {
 
     if (matchEquip && matchMus && rName) candidates.push(rName);
   }
+  if (candidates.length === 0) {
+    // Try looser matching: equipment only
+    for (let i=1;i<dbData.length;i++) {
+      const r = dbData[i];
+      const rName = String(r[nameIdx] || '').trim();
+      const rEquip = equipDbIdx !== -1 ? String(r[equipDbIdx] || '').toLowerCase() : '';
+      if (rName && rEquip && equip && rEquip.includes(equip)) candidates.push(rName);
+    }
+  }
+  if (candidates.length === 0) {
+    // Last resort: any non-empty exercise
+    for (let i=1;i<dbData.length;i++) {
+      const r = dbData[i];
+      const rName = String(r[nameIdx] || '').trim();
+      if (rName) candidates.push(rName);
+    }
+  }
   if (candidates.length === 0) return null;
   // pick a random one
   return candidates[Math.floor(Math.random()*candidates.length)];
