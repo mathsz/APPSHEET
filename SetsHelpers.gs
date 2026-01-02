@@ -195,6 +195,23 @@ function dumpSets(limit) {
   return out;
 }
 
+function dumpExerciceDB(limit) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('ExerciceDB');
+  if (!sh) return {error: 'ExerciceDB missing'};
+  const data = sh.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const nameIdx = headers.indexOf('nom complet') !== -1 ? headers.indexOf('nom complet') : headers.indexOf('name') !== -1 ? headers.indexOf('name') : 0;
+  const equipIdx = headers.indexOf('equipment') !== -1 ? headers.indexOf('equipment') : headers.indexOf('equip');
+  const primaryIdx = headers.indexOf('primary_muscle') !== -1 ? headers.indexOf('primary_muscle') : headers.indexOf('primary') !== -1 ? headers.indexOf('primary') : -1;
+  const out = [];
+  const lim = Math.min(limit || 50, data.length - 1);
+  for (let i = 1; i <= lim; i++) {
+    out.push({row: i+1, name: data[i][nameIdx], equip: (equipIdx !== -1 ? data[i][equipIdx] : ''), primary: (primaryIdx !== -1 ? data[i][primaryIdx] : '')});
+  }
+  return out;
+}
+
 // Add a doPost action hook to call replace via webhook
 function handleReplaceFromPost(data) {
   if (!data || !data.setId) return {status: 'error', msg: 'missing setId'};

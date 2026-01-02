@@ -840,6 +840,11 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (params.action === 'DUMP_EXERCISEDB' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = dumpExerciceDB(200);
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     // Debug: return params when ignored (mask token)
     const debugParams = Object.assign({}, params);
     if (debugParams.token) debugParams.token = '***';
