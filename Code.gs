@@ -794,6 +794,12 @@ function doPost(e) {
       generateWorkout(data.userEmail);
       return ContentService.createTextOutput(JSON.stringify({status: "success"}));
     }
+
+    if (data.action === 'REPLACE_EXERCISE' && data.setId) {
+      const res = handleReplaceFromPost(data);
+      return ContentService.createTextOutput(JSON.stringify({status: 'replaced', res}));
+    }
+
     return ContentService.createTextOutput(JSON.stringify({status: "ignored"}));
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({status: "error", msg: err.toString()}));
