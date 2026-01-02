@@ -27,3 +27,9 @@ function sampleAddTestSet() {
   const notes = 'Seeded by automation agent';
   return addTestSetWrapper(sampleGlideId, setNumber, reps, load, notes);
 }
+
+// New wrappers for Sets management
+function ensureSetsSchema() { return ensureSetsSchemaWrapper(); }
+function applySetsDataValidation() { return applySetsDataValidationWrapper(); }
+function autoAssignExercises() { return autoAssignExercisesWrapper(); }
+function replaceExercise(setId) { return replaceExerciseWrapper(setId); }
