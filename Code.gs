@@ -808,6 +808,12 @@ function doGet(e) {
       const result = createSetsSheet();
       return ContentService.createTextOutput(JSON.stringify({status: 'created', result})).setMimeType(ContentService.MimeType.JSON);
     }
+
+    if (params.action === 'SEED_TEST_SET' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = sampleAddTestSet();
+      return ContentService.createTextOutput(JSON.stringify({status: 'seeded', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({status: 'ignored'})).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: err.toString()})).setMimeType(ContentService.MimeType.JSON);
