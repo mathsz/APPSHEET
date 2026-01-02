@@ -840,6 +840,14 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (params.action === 'DUMP_SETS_HEADERS' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sh = ss.getSheetByName('Sets');
+      if (!sh) return ContentService.createTextOutput(JSON.stringify({status:'error', msg:'no sets'})).setMimeType(ContentService.MimeType.JSON);
+      const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', headers})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (params.action === 'DUMP_EXERCISEDB' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
       const result = dumpExerciceDB(200);
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
