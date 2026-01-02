@@ -1145,6 +1145,18 @@ function getHiitTimerData(userEmail) {
   return getHiitTimerData_(userEmail);
 }
 
+// Best-effort: returns the active user's email when available.
+// Note: For consumer Gmail accounts / some deployments, this may be blank.
+function getUserEmail() {
+  let email = '';
+  try {
+    if (Session.getActiveUser) email = String(Session.getActiveUser().getEmail() || '').trim();
+  } catch (e) {
+    email = '';
+  }
+  return {status: 'ok', email: String(email || '').trim()};
+}
+
 function setHiitIsDone_(userEmail, order, isDone) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_HIIT);

@@ -18,24 +18,16 @@
       }
       *, *::before, *::after { box-sizing: inherit; }
 
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
-        gap: 12px;
+      .listPanel {
         width: 100%;
-        max-width: 1040px;
-        margin: 0 auto;
-      }
-
-      .sidebar {
         border: 1px solid #ddd;
         border-radius: 10px;
         padding: 12px;
-        max-height: calc(100vh - 32px);
+        max-height: 240px;
         overflow: auto;
       }
 
-      .sidebarTitle {
+      .listTitle {
         font-weight: 800;
         margin: 0 0 10px;
         font-size: 14px;
@@ -125,63 +117,75 @@
       @media (max-width: 420px) {
         .row { gap: 10px; }
       }
-
-      @media (max-width: 900px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
-
-        .sidebar {
-          max-height: none;
-        }
-      }
     </style>
   </head>
   <body>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="sidebarTitle">Liste • courant / next</div>
+    <div class="container">
+      <h1 id="title">HIIT</h1>
+      <div class="label" id="subtitle">Chargement…</div>
+      <div class="label" id="comingNext"></div>
+
+      <div class="time" id="time">00:00</div>
+
+      <section class="listPanel" id="listPanel" style="display:none;">
+        <div class="listTitle">Liste • courant / next</div>
         <div class="list" id="exerciseList"></div>
-      </aside>
+      </section>
 
-      <div class="container">
-        <h1 id="title">HIIT</h1>
-        <div class="label" id="subtitle">Chargement…</div>
-        <div class="label" id="comingNext"></div>
-
-        <div class="time" id="time">00:00</div>
-
-        <div class="row">
-          <button id="start">Start</button>
-          <button id="pause">Pause</button>
-          <button id="reset">Reset</button>
-        </div>
-
-        <div class="row" id="hiitControls" style="display:none;">
-          <button id="prev">Prev</button>
-          <button id="toggleDone">Done</button>
-          <button id="next">Next</button>
-        </div>
-
-        <section class="video" id="videoPanel" style="display:none;">
-          <div class="videoTitle">Vidéo YouTube (recherche)</div>
-          <div class="ytWrap">
-            <iframe id="ytFrame" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-          </div>
-          <div class="muted" style="margin-top:10px;">
-            <a id="ytLink" href="#" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube</a>
-          </div>
-        </section>
-
-        <div class="muted" id="tip">HIIT timer (40/20) • URL: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code></div>
+      <div class="row">
+        <button id="start">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
       </div>
+
+      <div class="row" id="hiitControls" style="display:none;">
+        <button id="prev">Prev</button>
+        <button id="toggleDone">Done</button>
+        <button id="next">Next</button>
+      </div>
+
+      <section class="video" id="videoPanel" style="display:none;">
+        <div class="videoTitle">Illustration</div>
+        <div class="ytWrap">
+          <img id="mediaImg" alt="Illustration" style="display:none; width:100%; height:100%; object-fit:contain;" />
+        </div>
+        <div class="muted" style="margin-top:10px;">
+          <a id="mediaLink" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">Ouvrir l'image</a>
+        </div>
+      </section>
+
+      <div class="muted" id="tip">HIIT timer (40/20) • URL: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code></div>
     </div>
 
     <script>
-      const qs = new URLSearchParams(window.location.search);
-      const autostart = (qs.get('autostart') || '') === '1';
-      const userEmail = (qs.get('userEmail') || qs.get('email') || '').trim();
-      const startOrderParam = parseInt(qs.get('order') || '', 10);
+      let autostart = false;
+      let userEmail = '';
+      let startOrderParam = NaN;
+
+      function readParams_(cb) {
+        const fromSearch = () => {
+          const out = {};
+          try {
+            const qs = new URLSearchParams(window.location.search || '');
+            for (const [k, v] of qs.entries()) out[k] = v;
+          } catch (e) {}
+          cb(out);
+        };
+
+        const canLoc = typeof google !== 'undefined' && google.script && google.script.url && typeof google.script.url.getLocation === 'function';
+        if (!canLoc) return fromSearch();
+
+        try {
+          google.script.url.getLocation((loc) => {
+            const p = (loc && loc.parameter) ? loc.parameter : null;
+            if (p && Object.keys(p).length) return cb(p);
+            // Fallback if Apps Script doesn't return params for some reason.
+            return fromSearch();
+          });
+        } catch (e) {
+          return fromSearch();
+        }
+      }
 
       const titleEl = document.getElementById('title');
       const subtitleEl = document.getElementById('subtitle');
@@ -190,10 +194,14 @@
       const tipEl = document.getElementById('tip');
       const hiitControlsEl = document.getElementById('hiitControls');
       const toggleDoneBtn = document.getElementById('toggleDone');
+      const listPanelEl = document.getElementById('listPanel');
       const exerciseListEl = document.getElementById('exerciseList');
       const videoPanelEl = document.getElementById('videoPanel');
-      const ytFrameEl = document.getElementById('ytFrame');
-      const ytLinkEl = document.getElementById('ytLink');
+      const mediaLinkEl = document.getElementById('mediaLink');
+
+      // Optional: illustration image (gif/png/jpg/webp) instead of YouTube.
+      // If you put a direct image URL into Glide_HIIT.Video_URL, it will show here.
+      const mediaImgEl = document.getElementById('mediaImg');
 
       // Audio: triple beep. (Most mobile browsers require a user gesture to enable audio.)
       let audioCtx = null;
@@ -231,17 +239,95 @@
         } catch (e) {}
       }
 
+      function makeWavBeepDataUri_(freqHz, durationMs) {
+        // Generate a tiny PCM WAV beep (original content) to avoid external assets.
+        const sampleRate = 44100;
+        const seconds = Math.max(0.02, (Number(durationMs) || 120) / 1000);
+        const totalSamples = Math.floor(sampleRate * seconds);
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const blockAlign = numChannels * bitsPerSample / 8;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = totalSamples * blockAlign;
+
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+        let p = 0;
+        const writeStr = (s) => { for (let i = 0; i < s.length; i++) view.setUint8(p++, s.charCodeAt(i)); };
+        const writeU32 = (v) => { view.setUint32(p, v, true); p += 4; };
+        const writeU16 = (v) => { view.setUint16(p, v, true); p += 2; };
+
+        writeStr('RIFF');
+        writeU32(36 + dataSize);
+        writeStr('WAVE');
+        writeStr('fmt ');
+        writeU32(16);
+        writeU16(1);
+        writeU16(numChannels);
+        writeU32(sampleRate);
+        writeU32(byteRate);
+        writeU16(blockAlign);
+        writeU16(bitsPerSample);
+        writeStr('data');
+        writeU32(dataSize);
+
+        const freq = Number(freqHz) || 880;
+        const amp = 0.35;
+        for (let i = 0; i < totalSamples; i++) {
+          // Simple sine + fade in/out to reduce clicks.
+          const t = i / sampleRate;
+          const fadeIn = Math.min(1, i / (sampleRate * 0.01));
+          const fadeOut = Math.min(1, (totalSamples - 1 - i) / (sampleRate * 0.02));
+          const env = Math.max(0, Math.min(1, fadeIn, fadeOut));
+          const s = Math.sin(2 * Math.PI * freq * t) * amp * env;
+          view.setInt16(p, Math.max(-1, Math.min(1, s)) * 32767, true);
+          p += 2;
+        }
+
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        return 'data:audio/wav;base64,' + btoa(binary);
+      }
+
+      let beepAudioEl_ = null;
+      function getBeepAudioEl_() {
+        if (beepAudioEl_) return beepAudioEl_;
+        beepAudioEl_ = new Audio(makeWavBeepDataUri_(880, 120));
+        beepAudioEl_.preload = 'auto';
+        return beepAudioEl_;
+      }
+
+      function playFallbackBeep_() {
+        try {
+          const el = getBeepAudioEl_();
+          el.currentTime = 0;
+          const p = el.play();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+        } catch (e) {}
+      }
+
       function tripleBeep() {
         const ctx = getAudioCtx();
-        if (!ctx) {
+        const doBeeps = () => {
+          if (ctx && ctx.state === 'running') {
+            scheduleBeep_(ctx, 0, 120, 880);
+            scheduleBeep_(ctx, 200, 120, 880);
+            scheduleBeep_(ctx, 400, 120, 880);
+          } else {
+            playFallbackBeep_();
+            setTimeout(playFallbackBeep_, 200);
+            setTimeout(playFallbackBeep_, 400);
+          }
           try { navigator.vibrate && navigator.vibrate([120, 80, 120, 80, 120]); } catch (e) {}
+        };
+
+        if (!ctx) return doBeeps();
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(doBeeps).catch(doBeeps);
           return;
         }
-        primeAudio();
-        scheduleBeep_(ctx, 0, 120, 880);
-        scheduleBeep_(ctx, 200, 120, 880);
-        scheduleBeep_(ctx, 400, 120, 880);
-        try { navigator.vibrate && navigator.vibrate([120, 80, 120, 80, 120]); } catch (e) {}
+        doBeeps();
       }
 
       function fmt(s) {
@@ -265,40 +351,94 @@
         return hiit.items && hiit.items.length > 0 ? hiit.items[hiit.idx] : null;
       }
 
+      function getRememberedEmail_() {
+        try {
+          const v = String(window.localStorage ? (localStorage.getItem('hiitUserEmail') || '') : '').trim();
+          return v;
+        } catch (e) {
+          return '';
+        }
+      }
+
+      function rememberEmail_(email) {
+        try {
+          if (!window.localStorage) return;
+          const v = String(email || '').trim();
+          if (!v) return;
+          localStorage.setItem('hiitUserEmail', v);
+        } catch (e) {}
+      }
+
+      function renderMissingEmail_() {
+        titleEl.textContent = 'HIIT';
+        subtitleEl.textContent = 'Missing user email';
+        comingNextEl.textContent = '';
+        timeEl.textContent = '00:00';
+        hiitControlsEl.style.display = 'none';
+        listPanelEl.style.display = 'none';
+        videoPanelEl.style.display = 'none';
+        tipEl.innerHTML = 'Open with: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code>';
+      }
+
       function nextHiitItem() {
         return hiit.items && hiit.items.length > 0 && (hiit.idx + 1) < hiit.items.length ? hiit.items[hiit.idx + 1] : null;
       }
 
-      function youtubeSearchUrl_(q) {
-        return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(String(q || '').trim());
+      function isImageUrl_(url) {
+        const u = String(url || '').trim().toLowerCase();
+        return u.endsWith('.gif') || u.endsWith('.png') || u.endsWith('.jpg') || u.endsWith('.jpeg') || u.endsWith('.webp');
       }
-
-      function youtubeEmbedSearchUrl_(q) {
-        // YouTube embed search playlist.
-        return 'https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(String(q || '').trim());
-      }
-
-      let lastVideoQuery_ = '';
       function updateVideo_() {
         const item = currentHiitItem();
         const q = item && item.exercise ? String(item.exercise) : '';
         if (!q) {
           videoPanelEl.style.display = 'none';
+          if (mediaImgEl) {
+            mediaImgEl.style.display = 'none';
+            mediaImgEl.src = '';
+          }
+          if (mediaLinkEl) {
+            mediaLinkEl.style.display = 'none';
+            mediaLinkEl.href = '#';
+          }
           return;
         }
-        if (q === lastVideoQuery_) return;
-        lastVideoQuery_ = q;
+
+        // Only show media when a direct image URL is provided.
+        const rawUrl = item && item.videoUrl ? String(item.videoUrl).trim() : '';
+        if (!rawUrl || !isImageUrl_(rawUrl)) {
+          videoPanelEl.style.display = 'none';
+          if (mediaImgEl) {
+            mediaImgEl.style.display = 'none';
+            mediaImgEl.src = '';
+          }
+          if (mediaLinkEl) {
+            mediaLinkEl.style.display = 'none';
+            mediaLinkEl.href = '#';
+          }
+          return;
+        }
+
         videoPanelEl.style.display = '';
-        ytFrameEl.src = youtubeEmbedSearchUrl_(q);
-        ytLinkEl.href = youtubeSearchUrl_(q);
+        if (mediaImgEl) {
+          mediaImgEl.style.display = '';
+          mediaImgEl.src = rawUrl;
+        }
+        if (mediaLinkEl) {
+          mediaLinkEl.style.display = '';
+          mediaLinkEl.href = rawUrl;
+        }
       }
 
       function renderList_() {
         const items = hiit.items || [];
         if (!items.length) {
           exerciseListEl.textContent = '';
+          listPanelEl.style.display = 'none';
           return;
         }
+
+        listPanelEl.style.display = '';
 
         exerciseListEl.textContent = '';
         for (let i = 0; i < items.length; i++) {
@@ -309,6 +449,27 @@
           div.textContent = `${doneMark}${i + 1}. ${it && it.exercise ? it.exercise : ''}`;
           exerciseListEl.appendChild(div);
         }
+      }
+
+      function markCurrentDone_(desired) {
+        const item = currentHiitItem();
+        if (!item) return;
+        const want = !!desired;
+        if (!!item.isDone === want) return;
+        if (!userEmail) return;
+        const canRun = typeof google !== 'undefined' && google.script && google.script.run;
+        if (!canRun) return;
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res && res.status === 'ok') {
+              item.isDone = !!res.isDone;
+              setDoneButtonLabel();
+              renderList_();
+            }
+          })
+          .withFailureHandler(() => {})
+          .setHiitIsDone(userEmail, item.order, want);
       }
 
       function setDoneButtonLabel() {
@@ -350,8 +511,14 @@
       }
 
       function stopHiit() {
+        // Pause: capture remaining before stopping so resume is accurate.
+        if (timer) {
+          const diff = Math.round((hiit.endAt - Date.now()) / 1000);
+          hiit.phaseRemaining = Math.max(0, diff);
+        }
         hiit.running = false;
         stop();
+        renderHiit();
       }
 
       function nextHiitPhaseOrExercise() {
@@ -366,6 +533,9 @@
         }
 
         if (hiit.phase === 'work') {
+          // Auto-mark done when a WORK interval finishes.
+          markCurrentDone_(true);
+
           const isLast = hiit.idx >= hiit.items.length - 1;
           if (isLast) {
             stopHiit();
@@ -394,7 +564,11 @@
       }
 
       function startHiit() {
-        if (timer) return;
+        // Start should be idempotent: if a background/autostart interval exists (or got throttled), restart cleanly.
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
         if (!hiit.items || hiit.items.length === 0) return;
         hiit.running = true;
 
@@ -402,9 +576,11 @@
           const item = currentHiitItem();
           hiit.phase = 'work';
           hiit.phaseRemaining = Number.isFinite(item.work_s) && item.work_s > 0 ? item.work_s : 40;
-          hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
           renderHiit();
         }
+
+        // Always recompute endAt from the *current* remaining time (proper resume).
+        hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
 
         timer = setInterval(() => {
           const diff = Math.round((hiit.endAt - Date.now()) / 1000);
@@ -434,6 +610,7 @@
       function toggleHiitDone() {
         const item = currentHiitItem();
         if (!item) return;
+        if (!userEmail) return;
         const canRun = typeof google !== 'undefined' && google.script && google.script.run;
         if (!canRun) return;
         const newVal = !item.isDone;
@@ -496,49 +673,95 @@
         subtitleEl.textContent = 'Chargement…';
         timeEl.textContent = '00:00';
 
-        google.script.run
-          .withSuccessHandler((res) => {
-            if (!res || res.status !== 'ok') {
-              titleEl.textContent = 'HIIT';
-              subtitleEl.textContent = (res && res.msg) ? res.msg : 'Erreur chargement';
-              comingNextEl.textContent = '';
-              timeEl.textContent = '00:00';
-              return;
-            }
-            if (!res.items || res.items.length === 0) {
-              titleEl.textContent = 'HIIT';
-              subtitleEl.textContent = 'Aucun exercice HIIT (génère la séance d\'abord)';
-              comingNextEl.textContent = '';
-              timeEl.textContent = '00:00';
-              return;
-            }
+        readParams_((params) => {
+          autostart = String(params.autostart || '').trim() === '1';
+          userEmail = String(params.userEmail || params.email || '').trim();
+          startOrderParam = parseInt(String(params.order || '').trim(), 10);
 
-            hiitControlsEl.style.display = '';
-            hiit.items = (res.items || []).filter(it => it && it.exercise);
+          // Prefer explicit query param, then remembered email.
+          if (!userEmail) {
+            const remembered = getRememberedEmail_();
+            if (remembered) userEmail = remembered;
+          }
 
-            if (Number.isFinite(startOrderParam) && startOrderParam > 0) {
-              const idx = hiit.items.findIndex(it => Number(it.order) === startOrderParam);
-              hiit.idx = idx !== -1 ? idx : 0;
-            } else {
-              hiit.idx = 0;
-            }
+          const loadWithEmail_ = (email) => {
+            const em = String(email || '').trim();
+            if (!em) return renderMissingEmail_();
+            userEmail = em;
+            rememberEmail_(userEmail);
 
-            hiit.phase = 'work';
-            const first = currentHiitItem();
-            hiit.phaseRemaining = first ? (Number.isFinite(first.work_s) && first.work_s > 0 ? first.work_s : 40) : 0;
-            hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
-            updateVideo_();
-            renderHiit();
-            if (autostart) startHiit();
-          })
-          .withFailureHandler((err) => {
-            titleEl.textContent = 'HIIT';
-            subtitleEl.textContent = (err && err.message) ? ('Erreur Apps Script: ' + err.message) : 'Erreur Apps Script';
-            timeEl.textContent = '00:00';
-          })
-          .getHiitTimerData(userEmail);
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (!res || res.status !== 'ok') {
+                  titleEl.textContent = 'HIIT';
+                  subtitleEl.textContent = (res && res.msg) ? res.msg : 'Erreur chargement';
+                  comingNextEl.textContent = '';
+                  timeEl.textContent = '00:00';
+                  return;
+                }
 
-        tipEl.innerHTML = 'HIIT timer • URL: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code>';
+                // Server may return the resolved email it used; keep it.
+                if (res.userEmail) {
+                  userEmail = String(res.userEmail).trim();
+                  rememberEmail_(userEmail);
+                }
+
+                if (!res.items || res.items.length === 0) {
+                  titleEl.textContent = 'HIIT';
+                  subtitleEl.textContent = 'Aucun exercice HIIT (génère la séance d\'abord)';
+                  comingNextEl.textContent = '';
+                  timeEl.textContent = '00:00';
+                  return;
+                }
+
+                hiitControlsEl.style.display = '';
+                hiit.items = (res.items || []).filter(it => it && it.exercise);
+
+                if (Number.isFinite(startOrderParam) && startOrderParam > 0) {
+                  const idx = hiit.items.findIndex(it => Number(it.order) === startOrderParam);
+                  hiit.idx = idx !== -1 ? idx : 0;
+                } else {
+                  hiit.idx = 0;
+                }
+
+                hiit.phase = 'work';
+                const first = currentHiitItem();
+                hiit.phaseRemaining = first ? (Number.isFinite(first.work_s) && first.work_s > 0 ? first.work_s : 40) : 0;
+                hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+                try {
+                  updateVideo_();
+                } catch (e) {
+                  // Avoid blocking the timer UI if illustration rendering fails.
+                }
+                renderHiit();
+                if (autostart) startHiit();
+              })
+              .withFailureHandler((err) => {
+                titleEl.textContent = 'HIIT';
+                subtitleEl.textContent = (err && err.message) ? ('Erreur Apps Script: ' + err.message) : 'Erreur Apps Script';
+                timeEl.textContent = '00:00';
+              })
+              .getHiitTimerData(userEmail);
+          };
+
+          if (userEmail) {
+            loadWithEmail_(userEmail);
+          } else {
+            // Fallback: try reading Apps Script active user (may be blank for consumer accounts).
+            google.script.run
+              .withSuccessHandler((res) => {
+                const em = res && res.email ? String(res.email).trim() : '';
+                if (!em) return renderMissingEmail_();
+                loadWithEmail_(em);
+              })
+              .withFailureHandler(() => {
+                renderMissingEmail_();
+              })
+              .getUserEmail();
+          }
+
+          tipEl.innerHTML = 'HIIT timer • URL: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code>';
+        });
       })();
     </script>
   </body>
