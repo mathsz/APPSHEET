@@ -160,6 +160,24 @@ function applySetsDataValidationWrapper() { return applySetsDataValidation(); }
 function autoAssignExercisesWrapper() { return autoAssignExercises(); }
 function replaceExerciseWrapper(setId) { return replaceExerciseForSet(setId); }
 
+// Dump a small snapshot of Sets rows for external inspection
+function dumpSets(limit) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Sets');
+  if (!sh) return {error: 'Sets missing'};
+  const data = sh.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const idIdx = headers.indexOf('ID');
+  const glideIdx = headers.indexOf('Glide_Wod_ID');
+  const exIdx = headers.indexOf('Exercise');
+  const out = [];
+  const lim = Math.min(limit || 200, data.length - 1);
+  for (let i = 1; i <= lim; i++) {
+    out.push({row: i+1, id: data[i][idIdx], glide: data[i][glideIdx], exercise: data[i][exIdx]});
+  }
+  return out;
+}
+
 // Add a doPost action hook to call replace via webhook
 function handleReplaceFromPost(data) {
   if (!data || !data.setId) return {status: 'error', msg: 'missing setId'};
