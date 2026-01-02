@@ -195,6 +195,24 @@ function dumpSets(limit) {
   return out;
 }
 
+function getGlideInfo(glideId) {
+  if (!glideId) return null;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Glide_Wod');
+  if (!sh) return null;
+  const data = sh.getDataRange().getValues();
+  const header = data[0].map(h => String(h || '').trim());
+  const idIdx = header.indexOf('ID');
+  const equipIdx = header.indexOf('Equipment');
+  const musIdx = header.indexOf('Muscles');
+  let row = null;
+  for (let i=1;i<data.length;i++) {
+    if (String(data[i][idIdx]) === String(glideId)) { row = data[i]; break; }
+  }
+  if (!row) return null;
+  return {id: row[idIdx], equipment: (equipIdx !== -1 ? row[equipIdx] : ''), muscles: (musIdx !== -1 ? row[musIdx] : '')};
+}
+
 function dumpExerciceDB(limit) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName('ExerciceDB');
