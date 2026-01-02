@@ -1,12 +1,18 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
-  "main_files": ["Code.js", "appsscript.json"],
-  "last_update": "2026-01-01T16:40:00Z",
+  "main_files": ["Code.gs", "appsscript.json"],
+  "last_update": "2026-01-01T18:40:00Z",
   "notes": {
-    "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed at @22 — reload spreadsheet or run onOpen to refresh the menu.",
-    "last_deployment": "@22 (deploy: remove menu & functions)",
+    "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed previously — reload spreadsheet or run onOpen to refresh the menu.",
+    "recent_deployments": "versions up through 27 created (temporary web and API deployments used for testing)",
     "saveWorkout": "Updated to use Glide_Wod (clears Is_Done and writes to History)",
-    "schema_dump_url": "https://docs.google.com/spreadsheets/d/1o0jp22IWRGJ5siqpEbNvCd5R6t-kcXaWoPVZ0kzgFPA/edit?gid=1264733125#gid=1264733125"
+    "schema_dump_url": "https://docs.google.com/spreadsheets/d/1o0jp22IWRGJ5siqpEbNvCd5R6t-kcXaWoPVZ0kzgFPA/edit?gid=1264733125#gid=1264733125",
+    "sets_sheet": "Created by running createSets() in Apps Script editor (2026-01-01T18:39:38Z).",
+    "run_wrappers": "Present (createSets, addTestSetWrapper, moveSeedGlide, auditTarget, dumpTarget, logTarget)",
+    "copy_renamed": "Temporary copy copy.gs was renamed to Code.gs and pushed to project; original Code.js was archived; backup JS files were renamed to .bak to avoid duplicate parsing by Apps Script.",
+    "globals_guard": "Added guard to prevent duplicate-declaration errors for global constants (SHEET_DB etc.).",
+    "sets_helpers": "Added SetsHelpers.gs with ensureSetsSchema, applySetsDataValidation, autoAssignExercises, replaceExerciseForSet + wrappers; exposed doGet endpoints to run these tasks; added sampleAddTestSet and seeded a test set.",
+    "last_actions": "Deployed version 31 with temporary doGet actions; seeded test sets via SEED_TEST_SET; review AppSheet UI to wire Exercise Ref and actions."
   }
 }
 
