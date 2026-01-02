@@ -820,6 +820,21 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'seeded', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (params.action === 'ENSURE_SETS_SCHEMA' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = ensureSetsSchema();
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (params.action === 'APPLY_SETS_VALIDATION' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = applySetsDataValidation();
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (params.action === 'AUTO_ASSIGN_EXERCISES' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const result = autoAssignExercises();
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     // Debug: return params when ignored (mask token)
     const debugParams = Object.assign({}, params);
     if (debugParams.token) debugParams.token = '***';
