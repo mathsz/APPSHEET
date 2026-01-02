@@ -77,9 +77,9 @@ function findExerciseForGlideId(glideId) {
   for (let i=1;i<glideData.length;i++) {
     if (String(glideData[i][idIdx]) === String(glideId)) { row = glideData[i]; break; }
   }
-  if (!row) return null;
-  const equip = equipIdx !== -1 ? String(row[equipIdx] || '').toLowerCase() : '';
-  const mus = musIdx !== -1 ? String(row[musIdx] || '').toLowerCase() : '';
+  // If no glide row exists, proceed with empty equip/mus so we can fallback to generic candidates
+  const equip = row && equipIdx !== -1 ? String(row[equipIdx] || '').toLowerCase() : '';
+  const mus = row && musIdx !== -1 ? String(row[musIdx] || '').toLowerCase() : '';
 
   // search db for matching exercises
   const dbData = db.getDataRange().getValues();
