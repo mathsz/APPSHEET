@@ -18,6 +18,76 @@
       }
       *, *::before, *::after { box-sizing: inherit; }
 
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+        gap: 12px;
+        width: 100%;
+        max-width: 1040px;
+        margin: 0 auto;
+      }
+
+      .sidebar {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px;
+        max-height: calc(100vh - 32px);
+        overflow: auto;
+      }
+
+      .sidebarTitle {
+        font-weight: 800;
+        margin: 0 0 10px;
+        font-size: 14px;
+      }
+
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .listItem {
+        font-size: 14px;
+        line-height: 1.2;
+      }
+
+      .listItem.current {
+        font-weight: 800;
+        text-decoration: underline;
+      }
+
+      .listItem.next {
+        font-style: italic;
+      }
+
+      .video {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px;
+        width: 100%;
+      }
+
+      .videoTitle {
+        font-weight: 800;
+        margin: 0 0 10px;
+        font-size: 14px;
+      }
+
+      .ytWrap {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .ytWrap iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
       .container {
         min-height: calc(100vh - 32px);
         display: flex;
@@ -55,28 +125,56 @@
       @media (max-width: 420px) {
         .row { gap: 10px; }
       }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          max-height: none;
+        }
+      }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1 id="title">HIIT</h1>
-      <div class="label" id="subtitle">Chargement…</div>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebarTitle">Liste • courant / next</div>
+        <div class="list" id="exerciseList"></div>
+      </aside>
 
-      <div class="time" id="time">00:00</div>
+      <div class="container">
+        <h1 id="title">HIIT</h1>
+        <div class="label" id="subtitle">Chargement…</div>
+        <div class="label" id="comingNext"></div>
 
-      <div class="row">
-        <button id="start">Start</button>
-        <button id="pause">Pause</button>
-        <button id="reset">Reset</button>
+        <div class="time" id="time">00:00</div>
+
+        <div class="row">
+          <button id="start">Start</button>
+          <button id="pause">Pause</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <div class="row" id="hiitControls" style="display:none;">
+          <button id="prev">Prev</button>
+          <button id="toggleDone">Done</button>
+          <button id="next">Next</button>
+        </div>
+
+        <section class="video" id="videoPanel" style="display:none;">
+          <div class="videoTitle">Vidéo YouTube (recherche)</div>
+          <div class="ytWrap">
+            <iframe id="ytFrame" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            <a id="ytLink" href="#" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube</a>
+          </div>
+        </section>
+
+        <div class="muted" id="tip">HIIT timer (40/20) • URL: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code></div>
       </div>
-
-      <div class="row" id="hiitControls" style="display:none;">
-        <button id="prev">Prev</button>
-        <button id="toggleDone">Done</button>
-        <button id="next">Next</button>
-      </div>
-
-      <div class="muted" id="tip">HIIT timer (40/20) • URL: <code>?page=timerhiit&userEmail=you%40mail.com&order=1&autostart=1</code></div>
     </div>
 
     <script>
@@ -87,10 +185,15 @@
 
       const titleEl = document.getElementById('title');
       const subtitleEl = document.getElementById('subtitle');
+      const comingNextEl = document.getElementById('comingNext');
       const timeEl = document.getElementById('time');
       const tipEl = document.getElementById('tip');
       const hiitControlsEl = document.getElementById('hiitControls');
       const toggleDoneBtn = document.getElementById('toggleDone');
+      const exerciseListEl = document.getElementById('exerciseList');
+      const videoPanelEl = document.getElementById('videoPanel');
+      const ytFrameEl = document.getElementById('ytFrame');
+      const ytLinkEl = document.getElementById('ytLink');
 
       // Audio: triple beep. (Most mobile browsers require a user gesture to enable audio.)
       let audioCtx = null;
@@ -162,6 +265,52 @@
         return hiit.items && hiit.items.length > 0 ? hiit.items[hiit.idx] : null;
       }
 
+      function nextHiitItem() {
+        return hiit.items && hiit.items.length > 0 && (hiit.idx + 1) < hiit.items.length ? hiit.items[hiit.idx + 1] : null;
+      }
+
+      function youtubeSearchUrl_(q) {
+        return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(String(q || '').trim());
+      }
+
+      function youtubeEmbedSearchUrl_(q) {
+        // YouTube embed search playlist.
+        return 'https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(String(q || '').trim());
+      }
+
+      let lastVideoQuery_ = '';
+      function updateVideo_() {
+        const item = currentHiitItem();
+        const q = item && item.exercise ? String(item.exercise) : '';
+        if (!q) {
+          videoPanelEl.style.display = 'none';
+          return;
+        }
+        if (q === lastVideoQuery_) return;
+        lastVideoQuery_ = q;
+        videoPanelEl.style.display = '';
+        ytFrameEl.src = youtubeEmbedSearchUrl_(q);
+        ytLinkEl.href = youtubeSearchUrl_(q);
+      }
+
+      function renderList_() {
+        const items = hiit.items || [];
+        if (!items.length) {
+          exerciseListEl.textContent = '';
+          return;
+        }
+
+        exerciseListEl.textContent = '';
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          const div = document.createElement('div');
+          div.className = 'listItem' + (i === hiit.idx ? ' current' : '') + (i === hiit.idx + 1 ? ' next' : '');
+          const doneMark = it && it.isDone ? '✓ ' : '';
+          div.textContent = `${doneMark}${i + 1}. ${it && it.exercise ? it.exercise : ''}`;
+          exerciseListEl.appendChild(div);
+        }
+      }
+
       function setDoneButtonLabel() {
         const item = currentHiitItem();
         if (!item) {
@@ -186,6 +335,11 @@
         subtitleEl.textContent = `${phaseLabel} • ${intervalLabel} • ${n}/${total}`;
         timeEl.textContent = fmt(hiit.phaseRemaining);
         setDoneButtonLabel();
+
+        const next = nextHiitItem();
+        comingNextEl.textContent = next && next.exercise ? `Coming next: ${next.exercise}` : '';
+
+        renderList_();
       }
 
       function stop() {
@@ -206,6 +360,7 @@
           stopHiit();
           titleEl.textContent = 'HIIT';
           subtitleEl.textContent = 'Aucun exercice';
+          comingNextEl.textContent = '';
           timeEl.textContent = '00:00';
           return;
         }
@@ -216,6 +371,7 @@
             stopHiit();
             titleEl.textContent = 'Terminé';
             subtitleEl.textContent = `${hiit.items.length}/${hiit.items.length}`;
+            comingNextEl.textContent = '';
             timeEl.textContent = '00:00';
             tripleBeep();
             return;
@@ -233,6 +389,7 @@
         const next = currentHiitItem();
         hiit.phaseRemaining = Number.isFinite(next.work_s) && next.work_s > 0 ? next.work_s : 40;
         hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+        updateVideo_();
         renderHiit();
       }
 
@@ -269,6 +426,7 @@
         const item = currentHiitItem();
         hiit.phaseRemaining = item ? (Number.isFinite(item.work_s) && item.work_s > 0 ? item.work_s : 40) : 0;
         hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+        updateVideo_();
         renderHiit();
         if (hiit.running && !timer) startHiit();
       }
@@ -329,6 +487,7 @@
         if (!canRun) {
           titleEl.textContent = 'HIIT';
           subtitleEl.textContent = 'Erreur: google.script.run indisponible (Web App Apps Script requis)';
+          comingNextEl.textContent = '';
           timeEl.textContent = '00:00';
           return;
         }
@@ -342,12 +501,14 @@
             if (!res || res.status !== 'ok') {
               titleEl.textContent = 'HIIT';
               subtitleEl.textContent = (res && res.msg) ? res.msg : 'Erreur chargement';
+              comingNextEl.textContent = '';
               timeEl.textContent = '00:00';
               return;
             }
             if (!res.items || res.items.length === 0) {
               titleEl.textContent = 'HIIT';
               subtitleEl.textContent = 'Aucun exercice HIIT (génère la séance d\'abord)';
+              comingNextEl.textContent = '';
               timeEl.textContent = '00:00';
               return;
             }
@@ -366,6 +527,7 @@
             const first = currentHiitItem();
             hiit.phaseRemaining = first ? (Number.isFinite(first.work_s) && first.work_s > 0 ? first.work_s : 40) : 0;
             hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+            updateVideo_();
             renderHiit();
             if (autostart) startHiit();
           })
