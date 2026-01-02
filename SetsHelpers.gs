@@ -256,16 +256,16 @@ function dumpExerciceDB(limit) {
   if (!sh) return {error: 'ExerciceDB missing'};
   const data = sh.getDataRange().getValues();
   const headers = data[0].map(h => String(h || '').trim());
-  const idIdx = headers.indexOf('id') !== -1 ? headers.indexOf('id') : headers.indexOf('ID') !== -1 ? headers.indexOf('ID') : -1;
-  const nameIdx = headers.indexOf('nom complet') !== -1 ? headers.indexOf('nom complet') : headers.indexOf('name') !== -1 ? headers.indexOf('name') : 0;
-  const equipIdx = headers.indexOf('equipment') !== -1 ? headers.indexOf('equipment') : headers.indexOf('equip');
-  const primaryIdx = headers.indexOf('primary_muscle') !== -1 ? headers.indexOf('primary_muscle') : headers.indexOf('primary') !== -1 ? headers.indexOf('primary') : -1;
+  const idIdx = headers.map(h => h.toLowerCase()).indexOf('id');
+  const nameIdx = headers.map(h => h.toLowerCase()).indexOf('nom complet') !== -1 ? headers.map(h => h.toLowerCase()).indexOf('nom complet') : headers.map(h => h.toLowerCase()).indexOf('name') !== -1 ? headers.map(h => h.toLowerCase()).indexOf('name') : 0;
+  const equipIdx = headers.map(h => h.toLowerCase()).indexOf('equipment') !== -1 ? headers.map(h => h.toLowerCase()).indexOf('equipment') : headers.map(h => h.toLowerCase()).indexOf('equip');
+  const primaryIdx = headers.map(h => h.toLowerCase()).indexOf('primary_muscle') !== -1 ? headers.map(h => h.toLowerCase()).indexOf('primary_muscle') : headers.map(h => h.toLowerCase()).indexOf('primary') !== -1 ? headers.map(h => h.toLowerCase()).indexOf('primary') : -1;
   const out = [];
   const lim = Math.min(limit || 50, data.length - 1);
   for (let i = 1; i <= lim; i++) {
-    out.push({row: i+1, id: (idIdx !== -1 ? data[i][idIdx] : ''), name: data[i][nameIdx], equip: (equipIdx !== -1 ? data[i][equipIdx] : ''), primary: (primaryIdx !== -1 ? data[i][primaryIdx] : '')});
+    out.push({row: i+1, id: (idIdx !== -1 ? String(data[i][idIdx] || '') : ''), name: data[i][nameIdx], equip: (equipIdx !== -1 ? data[i][equipIdx] : ''), primary: (primaryIdx !== -1 ? data[i][primaryIdx] : '')});
   }
-  return out;
+  return {headers: headers, rows: out};
 }
 
 // Force-assign a random exercise to a set regardless of matching
@@ -351,12 +351,33 @@ function fillExerciceDBSequentialIds() {
     sh.getRange(1,1).setValue('ID');
   }
   const values = [];
-  for (let r=2; r<=rows; r++) values.push([r-1]);
+  for (let r=2; r<=rows; r++) values.push([String(r-1)]); // write as strings explicitly
   sh.getRange(2,1,values.length,1).setValues(values);
   return {status: 'filled', rows: values.length};
 }
 
 function fillExerciceDBSequentialIdsWrapper() { return fillExerciceDBSequentialIds(); }
+
+// Aggressive force-fill that overwrites existing values with sequential string IDs
+function forceFillExerciceDBIds() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('ExerciceDB');
+  if (!sh) return {error: 'ExerciceDB missing'};
+  const rows = sh.getLastRow();
+  if (rows < 2) return {status: 'no_rows'};
+  // Ensure ID header exists at column 1
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(h => String(h || '').trim());
+  if (headers[0].toLowerCase() !== 'id') {
+    sh.insertColumnBefore(1);
+    sh.getRange(1,1).setValue('ID');
+  }
+  const values = [];
+  for (let r=2; r<=rows; r++) values.push([String(r-1)]); // force overwrite
+  sh.getRange(2,1,values.length,1).setValues(values);
+  return {status: 'forced', rows: values.length};
+}
+
+function forceFillExerciceDBIdsWrapper() { return forceFillExerciceDBIds(); }
 
 function forceAssignTestUserSets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();

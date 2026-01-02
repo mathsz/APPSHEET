@@ -36,3 +36,4 @@ function replaceExercise(setId) { return replaceExerciseWrapper(setId); }
 function addExerciseColumn() { return addExerciseColumnIfMissingWrapper(); }
 function ensureExoDbKey() { return ensureExerciceDBKey(); }
 function fillExoDbIds() { return fillExerciceDBSequentialIdsWrapper(); }
+function forceFillExoDbIds() { return forceFillExerciceDBIdsWrapper(); }
