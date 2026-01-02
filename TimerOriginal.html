@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Timer</title>
+    <style>
+      html, body { height: 100%; }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 16px;
+        -webkit-text-size-adjust: 100%;
+        touch-action: manipulation;
+        box-sizing: border-box;
+        background: #fff;
+      }
+      *, *::before, *::after { box-sizing: inherit; }
+
+      .container {
+        min-height: calc(100vh - 32px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      h1 { font-size: clamp(22px, 6vw, 34px); margin: 0; text-align: center; }
+      .label { color: #555; font-size: clamp(16px, 4.5vw, 22px); margin: 0; text-align: center; }
+      .time {
+        font-size: clamp(96px, 18vw, 200px);
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin: 6px 0 6px;
+        text-align: center;
+        line-height: 1;
+      }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; justify-content: center; width: 100%; }
+      button {
+        padding: 18px 20px;
+        font-size: clamp(18px, 5.5vw, 28px);
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 10px;
+        flex: 1 1 140px;
+      }
+      input {
+        padding: 18px 20px;
+        font-size: clamp(18px, 5.5vw, 28px);
+        width: 100%;
+        border-radius: 10px;
+        flex: 2 1 220px;
+      }
+      .muted { color: #777; font-size: 13px; margin-top: 14px; line-height: 1.35; }
+
+      .muted code { font-size: 0.95em; }
+
+      @media (max-width: 420px) {
+        .row { gap: 10px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 id="title">Timer</h1>
+      <div class="label" id="subtitle"></div>
+
+      <div class="time" id="time">00:00</div>
+
+      <div class="row">
+        <button id="start">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+
+      <div class="row" id="hiitControls" style="display:none;">
+        <button id="prev">Prev</button>
+        <button id="toggleDone">Done</button>
+        <button id="next">Next</button>
+      </div>
+
+      <div class="row" id="singleControls">
+        <input id="seconds" type="number" inputmode="numeric" min="1" step="1" />
+        <button id="apply">Set seconds</button>
+      </div>
+
+      <div class="muted" id="tip">Tip: use URL params like <code>?page=timer&duration=90&title=Renegade%20Row&autostart=1</code></div>
+    </div>
+
+    <script>
+      const qs = new URLSearchParams(window.location.search);
+      const durationParam = parseInt(qs.get('duration') || qs.get('seconds') || '', 10);
+      const autostart = (qs.get('autostart') || '') === '1';
+      const title = qs.get('title') || 'Timer';
+      const setId = qs.get('setId') || '';
+      const mode = (qs.get('mode') || '').trim().toLowerCase();
+      const hiitMode = mode === 'hiit' || (qs.get('hiit') || '') === '1';
+      const userEmail = (qs.get('userEmail') || qs.get('email') || '').trim();
+      const startOrderParam = parseInt(qs.get('order') || '', 10);
+
+      const titleEl = document.getElementById('title');
+      const subtitleEl = document.getElementById('subtitle');
+      const timeEl = document.getElementById('time');
+      const secondsInput = document.getElementById('seconds');
+      const singleControlsEl = document.getElementById('singleControls');
+      const tipEl = document.getElementById('tip');
+      const hiitControlsEl = document.getElementById('hiitControls');
+      const toggleDoneBtn = document.getElementById('toggleDone');
+
+      titleEl.textContent = title;
+      subtitleEl.textContent = setId ? `Set: ${setId}` : '';
+
+      function fmt(s) {
+        const ss = Math.max(0, Math.floor(s));
+        const m = Math.floor(ss / 60);
+        const r = ss % 60;
+        return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+      }
+
+      let initial = Number.isFinite(durationParam) && durationParam > 0 ? durationParam : 90;
+      let remaining = initial;
+      let timer = null;
+
+      // HIIT state
+      let hiit = {
+        items: [],
+        idx: 0,
+        phase: 'work',
+        phaseRemaining: 0,
+        running: false,
+        endAt: 0
+      };
+
+      function currentHiitItem() {
+        return hiit.items && hiit.items.length > 0 ? hiit.items[hiit.idx] : null;
+      }
+
+      function setDoneButtonLabel() {
+        const item = currentHiitItem();
+        if (!item) {
+          toggleDoneBtn.textContent = 'Done';
+          toggleDoneBtn.disabled = true;
+          return;
+        }
+        toggleDoneBtn.disabled = false;
+        toggleDoneBtn.textContent = item.isDone ? 'Undo' : 'Done';
+      }
+
+      function renderSingle() {
+        timeEl.textContent = fmt(remaining);
+        secondsInput.value = String(initial);
+      }
+
+      function renderHiit() {
+        const item = hiit.items[hiit.idx];
+        const total = hiit.items.length;
+        const n = hiit.idx + 1;
+        const phaseLabel = hiit.phase === 'work' ? 'WORK' : 'REST';
+
+        titleEl.textContent = item && item.exercise ? item.exercise : 'HIIT';
+        const intervalLabel = item && item.intervalLabel ? item.intervalLabel : `${item && item.work_s ? item.work_s : 40}/${item && item.rest_s ? item.rest_s : 20}`;
+        subtitleEl.textContent = `${phaseLabel} • ${intervalLabel} • ${n}/${total}`;
+        timeEl.textContent = fmt(hiit.phaseRemaining);
+        setDoneButtonLabel();
+      }
+
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      function startSingle() {
+        if (timer) return;
+        const end = Date.now() + remaining * 1000;
+        timer = setInterval(() => {
+          const diff = Math.round((end - Date.now()) / 1000);
+          remaining = Math.max(0, diff);
+          renderSingle();
+          if (remaining <= 0) {
+            stop();
+            try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+          }
+        }, 200);
+      }
+
+      function stopHiit() {
+        hiit.running = false;
+        stop();
+      }
+
+      function nextHiitPhaseOrExercise() {
+        const item = hiit.items[hiit.idx];
+        if (!item) {
+          stopHiit();
+          titleEl.textContent = 'HIIT';
+          subtitleEl.textContent = 'Aucun exercice';
+          timeEl.textContent = '00:00';
+          return;
+        }
+
+        if (hiit.phase === 'work') {
+          // After WORK -> REST (unless last exercise: finish)
+          const isLast = hiit.idx >= hiit.items.length - 1;
+          if (isLast) {
+            stopHiit();
+            titleEl.textContent = 'Terminé';
+            subtitleEl.textContent = `${hiit.items.length}/${hiit.items.length}`;
+            timeEl.textContent = '00:00';
+            try { navigator.vibrate && navigator.vibrate([200, 100, 200, 100, 400]); } catch (e) {}
+            return;
+          }
+
+          hiit.phase = 'rest';
+          hiit.phaseRemaining = Number.isFinite(item.rest_s) && item.rest_s > 0 ? item.rest_s : 20;
+          hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+          renderHiit();
+          return;
+        }
+
+        // After REST -> next exercise WORK
+        hiit.idx = Math.min(hiit.idx + 1, hiit.items.length - 1);
+        hiit.phase = 'work';
+        const next = hiit.items[hiit.idx];
+        hiit.phaseRemaining = Number.isFinite(next.work_s) && next.work_s > 0 ? next.work_s : 40;
+        hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+        renderHiit();
+      }
+
+      function startHiit() {
+        if (timer) return;
+        if (!hiit.items || hiit.items.length === 0) return;
+        hiit.running = true;
+        // Initialize if needed
+        if (!hiit.phaseRemaining || hiit.phaseRemaining <= 0) {
+          const item = hiit.items[hiit.idx];
+          hiit.phase = 'work';
+          hiit.phaseRemaining = Number.isFinite(item.work_s) && item.work_s > 0 ? item.work_s : 40;
+          hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+          renderHiit();
+        }
+
+        timer = setInterval(() => {
+          const diff = Math.round((hiit.endAt - Date.now()) / 1000);
+          hiit.phaseRemaining = Math.max(0, diff);
+          renderHiit();
+          if (hiit.phaseRemaining <= 0) {
+            try { navigator.vibrate && navigator.vibrate([120]); } catch (e) {}
+            // Advance immediately
+            nextHiitPhaseOrExercise();
+            // If finished, stop timer loop
+            if (!hiit.running) {
+              stop();
+            }
+          }
+        }, 200);
+      }
+
+      function jumpToHiitIndex(newIdx) {
+        if (!hiit.items || hiit.items.length === 0) return;
+        const idx = Math.max(0, Math.min(newIdx, hiit.items.length - 1));
+        hiit.idx = idx;
+        hiit.phase = 'work';
+        const item = hiit.items[hiit.idx];
+        hiit.phaseRemaining = item ? (Number.isFinite(item.work_s) && item.work_s > 0 ? item.work_s : 40) : 0;
+        hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+        renderHiit();
+        // Keep running if it was running
+        if (hiit.running && !timer) startHiit();
+      }
+
+      function toggleHiitDone() {
+        const item = currentHiitItem();
+        if (!item) return;
+        const canRun = typeof google !== 'undefined' && google.script && google.script.run;
+        if (!canRun) return;
+        const newVal = !item.isDone;
+        toggleDoneBtn.disabled = true;
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res && res.status === 'ok') {
+              item.isDone = !!res.isDone;
+              setDoneButtonLabel();
+            }
+            toggleDoneBtn.disabled = false;
+          })
+          .withFailureHandler(() => {
+            toggleDoneBtn.disabled = false;
+          })
+          .setHiitIsDone(userEmail, item.order, newVal);
+      }
+
+      document.getElementById('start').addEventListener('click', () => {
+        if (hiitMode) return startHiit();
+        return startSingle();
+      });
+      document.getElementById('pause').addEventListener('click', () => {
+        if (hiitMode) return stopHiit();
+        return stop();
+      });
+      document.getElementById('reset').addEventListener('click', () => {
+        stop();
+        if (hiitMode) {
+          hiit.running = false;
+          hiit.idx = 0;
+          hiit.phase = 'work';
+          const item = hiit.items[0];
+          hiit.phaseRemaining = item ? (Number.isFinite(item.work_s) && item.work_s > 0 ? item.work_s : 40) : 0;
+          hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+          renderHiit();
+          return;
+        }
+        remaining = initial;
+        renderSingle();
+      });
+
+      document.getElementById('apply').addEventListener('click', () => {
+        const v = parseInt(secondsInput.value || '', 10);
+        if (!Number.isFinite(v) || v <= 0) return;
+        initial = v;
+        remaining = v;
+        renderSingle();
+        if (autostart) startSingle();
+      });
+
+      function initSingle() {
+        hiitControlsEl.style.display = 'none';
+        singleControlsEl.style.display = '';
+        tipEl.innerHTML = 'Tip: use URL params like <code>?page=timer&duration=90&title=Renegade%20Row&autostart=1</code>';
+        titleEl.textContent = title;
+        subtitleEl.textContent = setId ? `Set: ${setId}` : '';
+        renderSingle();
+        if (autostart) startSingle();
+      }
+
+      function initHiit(items) {
+        hiitControlsEl.style.display = '';
+        singleControlsEl.style.display = 'none';
+        tipEl.innerHTML = 'HIIT mode: <code>?page=timer&mode=hiit&userEmail=you%40mail.com&autostart=1</code>';
+        hiit.items = (items || []).filter(it => it && it.exercise);
+        // Optional deep-link: start at a specific order
+        if (Number.isFinite(startOrderParam) && startOrderParam > 0) {
+          const idx = hiit.items.findIndex(it => Number(it.order) === startOrderParam);
+          hiit.idx = idx !== -1 ? idx : 0;
+        } else {
+          hiit.idx = 0;
+        }
+        hiit.phase = 'work';
+        const first = hiit.items[0];
+        hiit.phaseRemaining = first ? (Number.isFinite(first.work_s) && first.work_s > 0 ? first.work_s : 40) : 0;
+        hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
+        renderHiit();
+        if (autostart) startHiit();
+      }
+
+      if (!hiitMode) {
+        initSingle();
+      } else {
+        // Load HIIT list from Apps Script
+        const canRun = typeof google !== 'undefined' && google.script && google.script.run;
+        // Avoid confusion: in HIIT mode, never show the single-timer UI while loading.
+        singleControlsEl.style.display = 'none';
+        hiitControlsEl.style.display = 'none';
+        titleEl.textContent = 'HIIT';
+        subtitleEl.textContent = 'Chargement…';
+        timeEl.textContent = '00:00';
+
+        if (!canRun) {
+          titleEl.textContent = 'HIIT';
+          subtitleEl.textContent = 'Erreur: google.script.run indisponible (Web App Apps Script requis)';
+          timeEl.textContent = '00:00';
+        } else {
+          google.script.run
+            .withSuccessHandler((res) => {
+              if (!res || res.status !== 'ok') {
+                titleEl.textContent = 'HIIT';
+                subtitleEl.textContent = (res && res.msg) ? res.msg : 'Erreur chargement';
+                timeEl.textContent = '00:00';
+                return;
+              }
+              if (!res.items || res.items.length === 0) {
+                titleEl.textContent = 'HIIT';
+                subtitleEl.textContent = 'Aucun exercice HIIT (génère la séance d\'abord)';
+                timeEl.textContent = '00:00';
+                return;
+              }
+              initHiit(res.items || []);
+            })
+            .withFailureHandler((err) => {
+              titleEl.textContent = 'HIIT';
+              subtitleEl.textContent = (err && err.message) ? ('Erreur Apps Script: ' + err.message) : 'Erreur Apps Script';
+              timeEl.textContent = '00:00';
+            })
+            .getHiitTimerData(userEmail);
+        }
+      }
+
+      document.getElementById('prev').addEventListener('click', () => {
+        if (!hiitMode) return;
+        stop();
+        hiit.running = false;
+        jumpToHiitIndex(hiit.idx - 1);
+      });
+
+      document.getElementById('next').addEventListener('click', () => {
+        if (!hiitMode) return;
+        stop();
+        hiit.running = false;
+        jumpToHiitIndex(hiit.idx + 1);
+      });
+
+      toggleDoneBtn.addEventListener('click', () => {
+        if (!hiitMode) return;
+        toggleHiitDone();
+      });
+    </script>
+  </body>
+</html>

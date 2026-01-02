@@ -1,7 +1,7 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
-  "last_update": "2026-01-01T19:40:00Z",
+  "last_update": "2026-01-02T04:20:00Z",
   "notes": {
     "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed previously — reload spreadsheet or run onOpen to refresh the menu.",
     "recent_deployments": "versions up through 27 created (temporary web and API deployments used for testing)",
@@ -18,8 +18,151 @@
     "last_actions": "Deployed versions up through 39 with debug and sets helpers; recently ran ENSURE_SETS_SCHEMA (updated=true) and AUTO_ASSIGN_EXERCISES (assigned rows).",
     "appsheet_view": "View appears broken after schema changes; likely needs table schema refresh in AppSheet and Exercise column set to a Ref (key mapping must match values written to sheet). I can apply AppSheet UI changes if you confirm the editor account and want me to proceed.",
     "sets_helpers_update": "Updated SetsHelpers: findExerciseForGlideId now returns ExerciceDB key (ID) when available; added getExerciseDisplayName() to resolve human-friendly names; dumpExerciceDB now includes 'id' field; added ensureExerciceDBKey() helper and RunWrappers.ensureExoDbKey(). Also added Exercise_Display support (virtual recommended in AppSheet).",
-    "ensure_exodb": "Ran ENSURE_EXODB_KEY (deployment 41) — header exists; endpoint returned rows:420 filled:0. DUMP_EXERCISEDB showed 'id' cells empty strings; added a helper to force-fill sequential IDs and will run it next.",
-    "next_steps": "Will run fillExerciceDBSequentialIds() to populate numeric IDs, then update AppSheet: set ExerciceDB key to ID, set label to name, set Sets.Exercise as Ref and a virtual display column, add Valid_If filters and actions."
+    "ensure_exodb": "Ran ENSURE_EXODB_KEY (deployment 41) — header exists; endpoint returned rows:420 filled:0. DUMP_EXERCISEDB showed 'id' cells empty strings; added a helper to force-fill sequential IDs and ran it (FORCE_FILL_EXODB_IDS) so IDs now populated.",
+    "appsheet_editor_confirmed": true,
+    "appsheet_editor": "githubfixer@gmail.com",
+    "appsheet_note": "User confirmed AppSheet editor account is active and granted me permission to proceed; do not ask again.",
+    "next_steps": "Applying AppSheet UI changes now using githubfixer@gmail.com (editor). I will: regenerate structure, set ExerciceDB.ID as Key, set label to name, set Sets.Exercise Type=Ref, add Exercise_Display virtual column, add Valid_If for equipment & muscles, make SetNumber/Reps required, add Replace webhook action, then test end-to-end.",
+    "appsheet_changes_in_progress": false,
+    "appsheet_changes_started_at": "2026-01-01T19:50:00Z",
+    "appsheet_changes_completed_at": "2026-01-01T19:57:00Z",
+    "appsheet_summary": "Completed AppSheet UI work: set ExerciceDB.ID as Key and label as name; set Sets.Exercise to Ref; added Exercise_Display virtual column; added Valid_If filter, made SetNumber and Reps required; added Replace webhook action. Tested Replace on seeded rows and verified changed Exercise keys via DUMP_SETS.",
+    "appsheet_workout_ui": {
+      "date": "2026-01-02",
+      "context": "Workout view is based on Glide_Wod. User wants a card layout summary with ability to open YouTube and mark done+timer, then tap into an editor showing Set1/2/3 reps+load and allow exercise replacement with dependent dropdowns.",
+      "issue": "In the current AppSheet card/deck view, the Row selected event action is greyed out, so cards are not clickable to open the detail/edit view.",
+      "recommended_pattern": "Use a Deck view for summary + an overlay action button (LINKTOROW) on each card to open a dedicated Detail view. This avoids relying on Row selected when AppSheet disables it (common in non-interactive dashboards or certain embedded/ref views).",
+      "detail_view": "Create Glide_Wod_Detail (Detail view) with edits enabled for Set1/2/3 reps+load and exercise replacement fields.",
+      "notes": "If Workout is inside a Dashboard, ensure Dashboard Interactive mode is ON. Also ensure Glide_Wod table updates allowed and ID is the Key so edits are permitted."
+    },
+    "sheet_direct_fixes": {
+      "date": "2026-01-02",
+      "deployment_used": "AKfycbwFf94pa-ivS06V3EEmxn4xrOncE1lvVrNGvgaXuzPQws2fhq0bcy-W8Esa0-SUGTt9",
+      "exodb_name_dedupe": {
+        "changed": 11,
+        "backup_sheet": "ExerciceDB_backup_20260101_210412",
+        "tag": "DEDUP_NAME_2026-01-01"
+      },
+      "exodb_fatigue_key_fix": {
+        "audit_rowsNeedingFix": 4,
+        "fix_changed": 4,
+        "alias": "upperback->upper back",
+        "backup_sheet": "ExerciceDB_backup_20260101_211306",
+        "tag": "FATIGUE_KEYFIX_2026-01-02"
+      },
+      "exodb_ankles_to_calves": {
+        "primary_muscle_changes": 1,
+        "fatigue_changes": 7,
+        "backup_sheet": "ExerciceDB_backup_20260101_212656",
+        "tag": "ANKLES_TO_CALVES_2026-01-02",
+        "notes": "Mapped primary_muscle=ankles to Calves and rewrote Fatigue keys Ankles->Calves. Follow-up run also normalized Fatigue key casing (Title Case) and merged duplicate keys produced by the mapping. Recovery dashboard no longer lists 'Ankles'."
+      },
+      "exodb_column_stats": {
+        "rows": 420,
+        "cols": 25,
+        "missingWantedColumns": 0,
+        "emptyColumns": 0,
+        "ensure_ran": false
+      }
+    },
+    "last_verification": {"dumps":{"dump_sets_latest": [{"row":2,"id":"7b369b50","glide":"mathieuvalotaire@gmail.com_1","exercise":281},{"row":3,"id":"s_1767312022521_5895","glide":"testuser@example.com_1","exercise":417},{"row":4,"id":"9f720cdb","glide":"mathieuvalotaire@gmail.com_1","exercise":189},{"row":5,"id":"s_1767312742756_8557","glide":"testuser@example.com_1","exercise":7},{"row":6,"id":"s_1767313064271_4435","glide":"testuser@example.com_1","exercise":17},{"row":7,"id":"s_1767313114047_9542","glide":"testuser@example.com_1","exercise":127},{"row":8,"id":"s_1767313428990_9301","glide":"testuser@example.com_1","exercise":226}]}}
+
+    ,"webhook_routing": {
+      "appsheet_to_appsscript": "Use Cloudflare Worker as proxy for AppSheet POST webhooks. Direct Apps Script /exec often fails in AppSheet because it returns a 302 redirect to script.googleusercontent; AppSheet/webhook clients may follow the redirect and break.",
+      "worker_requirement": "Worker must NOT follow redirects. Treat 302 as a success response for the webhook call, and return a simple 200 to AppSheet.",
+      "worker_base_url": "https://snowy-union-763c.mathieuvalotaire.workers.dev/",
+      "webapp_deployment_id": "AKfycbwFf94pa-ivS06V3EEmxn4xrOncE1lvVrNGvgaXuzPQws2fhq0bcy-W8Esa0-SUGTt9",
+      "webapp_deployed_version": 103,
+      "token": "TEMP_CREATE_SETS_TOKEN_20260101",
+      "debug": "Apps Script stores last webhook payload and can dump it via doGet?action=DUMP_LAST_WEBHOOK (token-gated)."
+    }
+
+    ,"generator_notes": {
+      "session_type_focus": "Selecting a session type like 'core back' must strictly constrain exercise selection to those muscles.",
+      "fix": "Added parsing of muscle words from selectedType and enforced strict muscle filtering inside pickRandomExercise. Also normalizes common ExerciceDB synonyms (abdominals/obliques->abs/core; lats/middle back/lower back->back) so 'Core back' yields a real core+back mix. Generator now prevents duplicate exercises within a single workout (dedupe by ExerciceDB id, fallback to name)."
+    }
+
+    ,"hiit_design": {
+      "date": "2026-01-02",
+      "format": "circuit",
+      "decision": "Keep a single ExerciceDB and add an optional 'Discipline' column (Strength/Pilates/Yoga/HIIT) instead of splitting multiple exercise bases. This avoids needing separate Yoga/Pilates DBs just because HIIT is different.",
+      "userprofile": {
+        "new_column": "ProgramType (aka WorkoutType)",
+        "values": ["Strength", "Pilates", "Yoga", "HIIT"],
+        "equipment_rule": "Show equipment only when ProgramType=Strength; hide for Yoga/HIIT/Pilates.",
+        "notes": "Strength continues using SelectedType/session recipes. HIIT/Yoga will use dedicated flows/tables rather than sets-based Glide_Wod generation."
+      },
+      "script_support": {
+        "status": "implemented",
+        "details": [
+          "Code.gs reads ProgramType/WorkoutType if present; otherwise infers from selected type keywords.",
+          "If ProgramType is Yoga or HIIT (and the column exists), generateWorkout will not write a Strength-style Glide_Wod.",
+          "pickRandomExercise can optionally filter ExerciceDB by Discipline when the column exists."
+        ]
+      }
+    }
+
+    ,"baseline_functional": {
+      "date": "2026-01-02",
+      "status": "functional",
+      "known_good_webapp_version": 103,
+      "appsheet_worker_base_url": "https://snowy-union-763c.mathieuvalotaire.workers.dev/",
+      "confirmed_working": [
+        "UserProfile isolated per logged-in user via slice userprofile_me",
+        "UserProfile key must be Email (ID values were not unique)",
+        "Generate workout supports multi-user (regen uses row Email, not actor User)",
+        "Glide_Wod generation keeps other users' rows (filters by UserEmail when available; otherwise appends)",
+        "Core back respects core+back via synonym normalization",
+        "No duplicate exercises within a single generated workout",
+        "Replace exercise endpoint avoids no-op (won't re-pick same exercise_id)",
+        "AppSheet POST webhooks go through Cloudflare Worker (do not follow redirects)"
+      ],
+      "appsheet_userprofile_setup": {
+        "slice": "userprofile_me",
+        "slice_filter": "LOWER(TRIM([Email])) = LOWER(USEREMAIL())",
+        "email_column": {
+          "initial_value": "USEREMAIL()",
+          "app_formula": "(empty)",
+          "key": true
+        }
+      }
+    }
+
+    ,"userprofile_headers": {
+      "date": "2026-01-02",
+      "headers_row": [
+        "ID",
+        "Email",
+        "Pseudo",
+        "Niveau",
+        "Materiel_dispo",
+        "Type_scéance_Voulue",
+        "Durée",
+        "Nombre_d'exercices",
+        "Sets",
+        "Age",
+        "Sexe",
+        "Titre1",
+        "Titre1",
+        "Titre1",
+        "Titre1",
+        "Titre1",
+        "Titre1"
+      ],
+      "script_mapping": {
+        "email": "Email",
+        "selectedType": "Type_scéance_Voulue",
+        "programType": "(not present) -> inferred from selectedType keywords unless you add ProgramType/WorkoutType",
+        "equipment": "Materiel_dispo (ignored automatically when programType != Strength)",
+        "targetCount": "Nombre_d'exercices",
+        "setCount": "Sets",
+        "hiit_minutes": "Durée (accepted as HIIT_Minutes synonym when programType=HIIT)",
+        "hiit_work_seconds": "(add optional column HIIT_WorkSeconds if you want; default 40)",
+        "hiit_rest_seconds": "(add optional column HIIT_RestSeconds if you want; default 20)",
+        "hiit_allow_jumps": "(add optional column HIIT_AllowJumps if you want; default FALSE)"
+      },
+      "recommendation": "Add a column named ProgramType (or WorkoutType) to avoid relying on keyword inference. Values: Strength/Pilates/Yoga/HIIT."
+    }
   }
 }
 

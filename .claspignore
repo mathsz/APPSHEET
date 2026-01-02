@@ -1,0 +1,6 @@
+# Ignore local-only duplicates that conflict with Apps Script filenames
+Code.js
+
+# Optional: ignore backups
+.backup*/
+.backup*/**

@@ -1,0 +1,175 @@
+{
+  "file": "/Users/theboss/Documents/APPSHEET/APPSHEET/exerciceDB.backup.csv",
+  "row_count": 420,
+  "columns": [
+    "Id",
+    "name",
+    "primary_muscle",
+    "secondary_muscles",
+    "core_engagement",
+    "unilateral",
+    "plyometric",
+    "isometric",
+    "knee_friendly",
+    "spine_load",
+    "body_category",
+    "type",
+    "level",
+    "impact",
+    "equipment",
+    "movement_pattern",
+    "tags",
+    "avoid_if_knee_issues",
+    "avoid_if_lower_back_issues",
+    "description",
+    "gif_url",
+    "fallback_url",
+    "fallback_url 2",
+    "Fatigue",
+    "Modified_Auto"
+  ],
+  "missing_required_count": 0,
+  "missing_required_examples": [],
+  "duplicate_id_count": 0,
+  "duplicate_ids": [],
+  "duplicate_name_count": 11,
+  "duplicate_name_examples": [
+    "plank",
+    "side plank",
+    "dead bug",
+    "bird dog",
+    "wall sit",
+    "seated forward bend",
+    "one arm dumbbell row",
+    "resistance band bicep curl",
+    "dumbbell pullover",
+    "neutral grip dumbbell bench press",
+    "arnold press"
+  ],
+  "bad_id_count": 0,
+  "bad_id_examples": [],
+  "sequential_id_issues": [],
+  "fatigue_bad_count": 0,
+  "fatigue_bad_examples": [],
+  "domains_top": {
+    "primary_muscle": [
+      [
+        "shoulders",
+        50
+      ],
+      [
+        "core",
+        49
+      ],
+      [
+        "quads",
+        43
+      ],
+      [
+        "glutes",
+        33
+      ],
+      [
+        "back",
+        25
+      ],
+      [
+        "chest",
+        24
+      ],
+      [
+        "biceps",
+        23
+      ],
+      [
+        "yoga",
+        22
+      ],
+      [
+        "arms",
+        20
+      ],
+      [
+        "hips",
+        18
+      ],
+      [
+        "triceps",
+        15
+      ],
+      [
+        "obliques",
+        14
+      ],
+      [
+        "legs",
+        13
+      ],
+      [
+        "hamstrings",
+        12
+      ],
+      [
+        "upper back",
+        11
+      ],
+      [
+        "abs",
+        10
+      ],
+      [
+        "calves",
+        9
+      ],
+      [
+        "hip flexors",
+        7
+      ],
+      [
+        "lower back",
+        5
+      ],
+      [
+        "spine",
+        5
+      ]
+    ],
+    "body_category": [],
+    "type": [],
+    "level": [],
+    "impact": [],
+    "equipment": [
+      [
+        "bodyweight",
+        246
+      ],
+      [
+        "dumbbells",
+        62
+      ],
+      [
+        "band",
+        42
+      ],
+      [
+        "pilateswall",
+        36
+      ],
+      [
+        "trx",
+        19
+      ],
+      [
+        "bench",
+        8
+      ],
+      [
+        "kettlebell",
+        7
+      ]
+    ],
+    "movement_pattern": [],
+    "Fatigue": []
+  },
+  "semantic_warnings": []
+}

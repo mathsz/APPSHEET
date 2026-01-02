@@ -1,0 +1,44 @@
+issue_type,severity,name_key,row,Id,name,column,detail
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,secondary_muscles,"Column ""secondary_muscles"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,core_engagement,"Column ""core_engagement"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,unilateral,"Column ""unilateral"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,plyometric,"Column ""plyometric"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,isometric,"Column ""isometric"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,knee_friendly,"Column ""knee_friendly"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,spine_load,"Column ""spine_load"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,body_category,"Column ""body_category"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,type,"Column ""type"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,level,"Column ""level"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,impact,"Column ""impact"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,movement_pattern,"Column ""movement_pattern"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,tags,"Column ""tags"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,avoid_if_knee_issues,"Column ""avoid_if_knee_issues"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,avoid_if_lower_back_issues,"Column ""avoid_if_lower_back_issues"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,description,"Column ""description"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,gif_url,"Column ""gif_url"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,fallback_url,"Column ""fallback_url"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,fallback_url 2,"Column ""fallback_url 2"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,Fatigue,"Column ""Fatigue"" is empty for all 420 rows"
+COLUMN_EMPTY_ALL_ROWS,warning,,,,,Modified_Auto,"Column ""Modified_Auto"" is empty for all 420 rows"
+DUPLICATE_NAME,warning,arnold press,321,320,Arnold Press,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,arnold press,327,326,Arnold Press,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,bird dog,43,42,Bird Dog,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,bird dog,243,242,Bird Dog,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,dead bug,42,41,Dead Bug,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,dead bug,238,237,Dead Bug,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,dumbbell pullover,209,208,Dumbbell Pullover,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,dumbbell pullover,216,215,Dumbbell Pullover,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,neutral grip dumbbell bench press,220,219,Neutral Grip Dumbbell Bench Press,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,neutral grip dumbbell bench press,226,225,Neutral Grip Dumbbell Bench Press,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,one arm dumbbell row,173,172,One Arm Dumbbell Row,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,one arm dumbbell row,175,174,One Arm Dumbbell Row,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,plank,10,9,Plank,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,plank,256,255,Plank,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,resistance band bicep curl,191,190,Resistance Band Bicep Curl,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,resistance band bicep curl,193,192,Resistance Band Bicep Curl,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,seated forward bend,98,97,Seated Forward Bend,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,seated forward bend,379,378,Seated Forward Bend,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,side plank,11,10,Side Plank,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,side plank,258,257,Side Plank,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,wall sit,44,43,Wall Sit,name,Duplicate normalized name group size=2
+DUPLICATE_NAME,warning,wall sit,298,297,Wall Sit,name,Duplicate normalized name group size=2

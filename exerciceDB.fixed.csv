@@ -1,0 +1,421 @@
+Id,name,primary_muscle,secondary_muscles,core_engagement,unilateral,plyometric,isometric,knee_friendly,spine_load,body_category,type,level,impact,equipment,movement_pattern,tags,avoid_if_knee_issues,avoid_if_lower_back_issues,description,gif_url,fallback_url,fallback_url 2,Fatigue,Modified_Auto
+1,Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+2,Wide Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+3,Diamond Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+4,Pike Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+5,Decline Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+6,Incline Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+7,Hindu Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+8,Shoulder Taps,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+9,Plank,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+10,Side Plank,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+11,Reverse Plank,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+12,Mountain Climbers,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+13,Burpees,full body,,,,,,,,Full Body,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+14,Jumping Jacks,full body,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+15,High Knees,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+16,Butt Kicks,hamstrings,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+17,Squats,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+18,Wide Squats,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+19,Jump Squats,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+20,Lunges,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+21,Reverse Lunges,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+22,Side Lunges,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+23,Calf Raises,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+24,Glute Bridges,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+25,Hip Thrusts,glutes,,,,,,,,Lower,,,,bench,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+26,Donkey Kicks,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+27,Fire Hydrants,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+28,Superman,lower back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+29,Back Extensions,lower back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+30,Reverse Snow Angels,upper back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+31,Arm Circles,shoulders,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+32,Tricep Dips,triceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+33,Wall Push-Ups,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+34,Plank Shoulder Reach,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+35,Flutter Kicks,lower abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+36,Leg Raises,lower abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+37,Russian Twists,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+38,Sit-Ups,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+39,Crunches,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+40,Bicycle Crunches,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+41,Dead Bug,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+42,Bird Dog,lower back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+43,Wall Sit,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+44,Step-Ups,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+45,Fast Feet,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+46,Skaters,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+47,Plank Jacks,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+48,Walkouts,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+49,Inchworms,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+50,Superman Hold,lower back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+51,Arm Raises,shoulders,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+52,Chest Expander,chest,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+53,Up & Down Planks,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+54,Elbow Plank,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+55,Side Leg Raises,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+56,Standing Leg Circles,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+57,Standing Knee Raises,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+58,Side Bends,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+59,Standing Twists,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+60,Arm Scissors,shoulders,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+61,Jumping Lunges,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+62,High Knees Run,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+63,Side-To-Side Hops,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+64,Toe Taps,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+65,March Steps,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+66,Side Steps,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+67,Back Kicks,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+68,Front Kicks,hip flexors,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+69,Side Kicks,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+70,Punches,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+71,Hook Punches,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+72,Uppercuts,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+73,Cross Punches,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+74,Shadow Boxing,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+75,Jump Rope (Simulated),calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+76,Jumping T’S,shoulders,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+77,Jumping Jacks Step,full body,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+78,Side-To-Side Squat Steps,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+79,Backfists,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+80,Elbow Strikes,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+81,Knee Strikes,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+82,Side Elbow Strikes,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+83,Back Elbow Strikes,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+84,Palm Strikes,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+85,Hammerfists,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+86,Side Leg Swings,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+87,Front Leg Swings,hip flexors,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+88,Standing Toe Touches,hamstrings,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+89,Standing Side Crunches,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+90,Standing Cross Crunches,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+91,Hip Rotations,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+92,Ankle Rotations,ankles,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+93,Neck Rotations,neck,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+94,Neck Side Tilts,neck,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+95,Arm Pullovers,shoulders,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+96,Child’S Pose,lower back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+97,Seated Forward Bend,hamstrings,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+98,Seated Side Bend,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+99,Seated Twist,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+100,Bridge Hold,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+101,Reverse Plank Leg Raises,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+102,Plank Leg Raises,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+103,Plank Hip Dips,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+104,Plank Reach,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+105,Plank Walkouts,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+106,Reverse Crunches,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+107,V-Ups,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+108,Toe Touches,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+109,Heel Touches,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+110,Leg Pull-Ins,abs,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+111,Leg Circles,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+112,Scissor Kicks,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+113,Reverse Leg Raises,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+114,Back Leg Raises,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+115,Side Leg Lifts,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+116,Hip Abductions,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+117,Hip Adductions,inner thighs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+118,Hip Circles,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+119,Standing Hamstring Curls,biceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+120,Standing Glute Kickbacks,glutes,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+121,Standing Hip Openers,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+122,Standing Hip Closers,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+123,Standing Calf Raises,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+124,Wide Calf Raises,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+125,Narrow Calf Raises,back,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+126,Single-Leg Calf Raises,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+127,Ankle Hops,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+128,Heel Walk,shins,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+129,Toe Walk,calves,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+130,High March,hip flexors,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+131,Butt Kicks Run,hamstrings,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+132,Side Shuffle,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+133,Forward Shuffle,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+134,Backward Shuffle,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+135,Jumping Side Kicks,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+136,Jump Knee Tucks,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+137,Jump Squat Hold,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+138,Jump Lunge Switch,quads,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+139,Jump Side Steps,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+140,Jump Twists,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+141,Jump Punches,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+142,Jumping Hooks,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+143,Jumping Uppercuts,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+144,Jumping Cross Punches,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+145,Jumping Jabs,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+146,Side Kicks Jump,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+147,Front Kicks Jump,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+148,Back Kicks Jump,legs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+149,Roundhouse Kicks,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+150,Hook Kicks,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+151,Axe Kicks,hips,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+152,Side Punch Steps,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+153,Cross Punch Steps,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+154,Uppercut Steps,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+155,Hook Steps,arms,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+156,Side Knee Raises,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+157,Cross Knee Raises,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+158,Standing Crunches,abs,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+159,Standing Oblique Crunches,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+160,Standing Torso Twists,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+161,Torso Rotations,core,,,,,,,,Core,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+162,Torso Side Bends,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+163,Torso Forward Bend,hamstrings,,,,,,,,Lower,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+164,Torso Back Bend,spine,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+165,Standing Side Reach,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+166,Wide Grip Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+167,Supine Elbow Push,back,,,,,,,,,,,,bodyweight,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+168,Renegade Row,back,,,,,,,,Upper,,,,dumbbells,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+169,Band High Row,back,,,,,,,,Upper,,,,band,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+170,Resistance Band Lat Pulldown,back,,,,,,,,Upper,,,,band,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+171,Gorilla Row,back,,,,,,,,Upper,,,,kettlebell,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+172,One Arm Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+173,Resistance Band Row,back,,,,,,,,Upper,,,,band,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+174,One Arm Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+175,Bent Over Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+176,Neutral Grip Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+177,Chest Supported Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+178,Incline Dumbbell Row,back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+179,Trx Row,back,,,,,,,,Upper,,,,trx,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+180,Trx Low Row,back,,,,,,,,Upper,,,,trx,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+181,One Arm Kettlebell Row,back,,,,,,,,Upper,,,,kettlebell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+182,Chest Supported Row,back,,,,,,,,Upper,,,,bench,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+183,Seal Row (Dumbbells),back,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+184,Seated Band Row,back,,,,,,,,Upper,,,,band,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+185,Door Frame Row,back,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+186,TODO: name,category,,,,,,,,,,,,dumbbells,,,,,,,,,Medium,fatigue_normalized_2026-01-01T00:00:00Z
+187,Dumbbell Bicep Curl,biceps,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+188,Trx Bicep Curl,biceps,,,,,,,,Upper,,,,trx,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+189,Trx Hammer Curl,biceps,,,,,,,,Upper,,,,trx,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+190,Resistance Band Bicep Curl,biceps,,,,,,,,Upper,,,,band,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+191,Alternating Dumbbell Curl,biceps,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+192,Resistance Band Bicep Curl,biceps,,,,,,,,Upper,,,,band,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+193,Zottman Curl,biceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+194,Doorframe Curl,biceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+195,Leg Resisted Curl,biceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+196,Isometric Biceps Hold,biceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+197,Towel Curl,biceps,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+198,Chin Up,upper back,,,,,,,,Upper,,,,bodyweight,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+199,Self Resisted Curl,biceps,,,,,,,,Upper,,,,dumbbells,,,,,,,,,Medium,category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+200,Dumbbell Hammer Curl,biceps,,,,,,,,Upper,,,,dumbbell,,,,,,,,,Medium,equip_inferred_2026-01-01T00:00:00Z|category_inferred_2026-01-01T00:00:00Z|fatigue_normalized_2026-01-01T00:00:00Z
+201,Band Hammer Curl,biceps,,,,,,,,,,,,band,,,,,,,,,,
+202,Spider Curl,biceps,,,,,,,,,,,,dumbbells,,,,,,,,,,
+203,Concentration Curl,biceps,,,,,,,,,,,,band,,,,,,,,,,
+204,Lying Band Curl,biceps,,,,,,,,,,,,band,,,,,,,,,,
+205,Incline Dumbbell Curl,biceps,,,,,,,,,,,,dumbbells,,,,,,,,,,
+206,Waiter Curl,biceps,,,,,,,,,,,,bodyweight,,,,,,,,,,
+207,Inverted Row,back,,,,,,,,,,,,dumbbells,,,,,,,,,,
+208,Dumbbell Pullover,upper back,,,,,,,,,,,,dumbbells,,,,,,,,,,
+209,Kettlebell Pullover,upper back,,,,,,,,,,,,band,,,,,,,,,,
+210,Resistance Band Pullover,upper back,,,,,,,,,,,,band,,,,,,,,,,
+211,Bodyweight Pullover,upper back,,,,,,,,,,,,trx,,,,,,,,,,
+212,Trx Pullover,upper back,,,,,,,,,,,,trx,,,,,,,,,,
+213,Dumbbell Straight Arm Pullover,upper back,,,,,,,,,,,,dumbbells,,,,,,,,,,
+214,Bench Pullover,upper back,,,,,,,,,,,,dumbbells,,,,,,,,,,
+215,Dumbbell Pullover,upper back,,,,,,,,,,,,dumbbells,,,,,,,,,,
+216,Trx Push Up,chest,,,,,,,,,,,,trx,,,,,,,,,,
+217,Trx Chest Fly,chest,,,,,,,,,,,,trx,,,,,,,,,,
+218,Resistance Band Chest Press,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+219,Neutral Grip Dumbbell Bench Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+220,Kettlebell One Arm Floor Press,shoulders,,,,,,,,,,,,bench,,,,,,,,,,
+221,Incline Push Up,chest,,,,,,,,,,,,bench,,,,,,,,,,
+222,Decline Dumbbell Bench Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+223,Band Crossover,chest,,,,,,,,,,,,band,,,,,,,,,,
+224,Dumbbell Bench Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+225,Neutral Grip Dumbbell Bench Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+226,Standing Band Press,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+227,Incline Dumbbell Bench Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+228,Svend Press,shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+229,Diamond Push Up,chest,,,,,,,,,,,,band,,,,,,,,,,
+230,Resistance Band Fly,chest,,,,,,,,,,,,band,,,,,,,,,,
+231,Resistance Band Chest Fly,chest,,,,,,,,,,,,band,,,,,,,,,,
+232,Wide Grip Push Up,chest,,,,,,,,,,,,bodyweight,,,,,,,,,,
+233,Push Up,chest,,,,,,,,,,,,dumbbells,,,,,,,,,,
+234,Single Arm Floor Press,shoulders,,,,,,,,,,,,trx,,,,,,,,,,
+235,Trx Pike,shoulders,,,,,,,,,,,,trx,,,,,,,,,,
+236,Leg Lowering,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+237,Dead Bug,core,,,,,,,,,,,,dumbbells,,,,,,,,,,
+238,Dumbbell Dead Bug,core,,,,,,,,,,,,dumbbells,,,,,,,,,,
+239,Dead Bug (Single-Leg Dead Bug),core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+240,Bird Dog (Leg-Only),glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+241,Bird Dog (Arm-Only),shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+242,Bird Dog,core,,,,,,,,,,,,dumbbells,,,,,,,,,,
+243,Suitcase Carry,core,,,,,,,,,,,,band,,,,,,,,,,
+244,Pallof Press,shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+245,Straight-Arm Crunch,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+246,Knee Reach Crunch,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+247,Crunch,core,,,,,,,,,,,,dumbbells,,,,,,,,,,
+248,Weighted Crunch,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+249,Mountain Climber,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+250,Heel Touch,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,,
+251,Oblique Crunch,obliques,,,,,,,,,,,,dumbbells,,,,,,,,,,
+252,Dumbbell Side Bend,obliques,,,,,,,,,,,,dumbbells,,,,,,,,,,
+253,Russian Twist,obliques,,,,,,,,,,,,bodyweight,,,,,,,,,,
+254,Hollow Body Hold,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+255,Plank,core,,,,,,,,,,,,dumbbells,,,,,,,,,,
+256,Weighted Plank,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+257,Side Plank,core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+258,Curtsy Lunge,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+259,Reverse Lunge,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+260,Dumbbell Reverse Lunge,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+261,Step Up,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+262,Dumbbell Step Up,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+263,Trx Lunge,quads,,,,,,,,,,,,trx,,,,,,,,,,
+264,Dumbbell Lateral Step Up,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+265,Walking Lunges,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+266,Bulgarian Split Squat,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+267,Glute Bridge,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+268,Dumbbell Glute Bridge,glutes,,,,,,,,,,,,dumbbells,,,,,,,,,,
+269,Single Leg Glute Bridge,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+270,Dumbbell Single Leg Glute Bridge,glutes,,,,,,,,,,,,dumbbells,,,,,,,,,,
+271,Donkey Kick,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+272,Resistance Band Glute Bridge,glutes,,,,,,,,,,,,band,,,,,,,,,,
+273,Single Leg Glute Bridge (Elevated),glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+274,Standing Hip Extension,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+275,Prone Hip Extension,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+276,Frog Pump,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+277,Trx Hamstring Curl,biceps,,,,,,,,,,,,trx,,,,,,,,,,
+278,Dumbbell Romanian Deadlift,glutes,,,,,,,,,,,,dumbbells,,,,,,,,,,
+279,Kettlebell Deadlift,glutes,,,,,,,,,,,,kettlebell,,,,,,,,,,
+280,Resistance Band Good Morning,hamstrings,,,,,,,,,,,,band,,,,,,,,,,
+281,Trx Hamstring Curl (Light),biceps,,,,,,,,,,,,trx,,,,,,,,,,
+282,Resistance Band Good Morning (Light),hamstrings,,,,,,,,,,,,band,,,,,,,,,,
+283,Hip Hinge,hamstrings,,,,,,,,,,,,bodyweight,,,,,,,,,,
+284,Nordic Hamstring Curl (Negative),biceps,,,,,,,,,,,,bodyweight,,,,,,,,,,
+285,Single Leg Rdl,hamstrings,,,,,,,,,,,,bodyweight,,,,,,,,,,
+286,Banded Pull Through,hamstrings,,,,,,,,,,,,band,,,,,,,,,,
+287,Banded Good Morning,hamstrings,,,,,,,,,,,,band,,,,,,,,,,
+288,Standing Hip Abduction,hips,,,,,,,,,,,,bodyweight,,,,,,,,,,
+289,Resistance Band Hip Abduction,hips,,,,,,,,,,,,band,,,,,,,,,,
+290,Fire Hydrant,hips,,,,,,,,,,,,bodyweight,,,,,,,,,,
+291,Resistance Band Lateral Walk,hips,,,,,,,,,,,,band,,,,,,,,,,
+292,Lying Hip Abduction,hips,,,,,,,,,,,,bodyweight,,,,,,,,,,
+293,Resistance Band Lateral Walk (Hip Circle),hips,,,,,,,,,,,,band,,,,,,,,,,
+294,Monster Walk,hips,,,,,,,,,,,,bodyweight,,,,,,,,,,
+295,Banded Clamshell,hips,,,,,,,,,,,,band,,,,,,,,,,
+296,Glute Bridge Hold,glutes,,,,,,,,,,,,bodyweight,,,,,,,,,,
+297,Wall Sit,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+298,Weighted Wall Sit,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+299,Single Leg Wall Sit,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+300,Kettlebell Goblet Squat Hold,quads,,,,,,,,,,,,kettlebell,,,,,,,,,,
+301,Squat Hold,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+302,Dumbbell Squat Hold,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+303,Squat Hold (Light),quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+304,Lunge Hold,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+305,Lying Leg Raise,hip flexors,,,,,,,,,,,,bodyweight,,,,,,,,,,
+306,Trx Squat,quads,,,,,,,,,,,,trx,,,,,,,,,,
+307,Dumbbell Goblet Squat,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+308,Dumbbell Leg Extension,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+309,Banded Squat,quads,,,,,,,,,,,,band,,,,,,,,,,
+310,Spanish Squat,quads,,,,,,,,,,,,band,,,,,,,,,,
+311,Sissy Squat (Supported),quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+312,Step Down,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+313,Sumo Squat,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+314,Dumbbell Sumo Squat,quads,,,,,,,,,,,,dumbbells,,,,,,,,,,
+315,Resistance Band Sumo Deadlift,glutes,,,,,,,,,,,,band,,,,,,,,,,
+316,Kettlebell Sumo Deadlift,glutes,,,,,,,,,,,,kettlebell,,,,,,,,,,
+317,Kettlebell Sumo Deadlift (Light),glutes,,,,,,,,,,,,kettlebell,,,,,,,,,,
+318,Kettlebell Sumo Squat (Light),quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+319,Cuban Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+320,Arnold Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+321,One Arm Kettlebell Press,shoulders,,,,,,,,,,,,kettlebell,,,,,,,,,,
+322,Arnold Press (Light),shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+323,Resistance Band Shoulder Press,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+324,Pike Push Up (Light),shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+325,Dumbbell Shoulder Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+326,Arnold Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+327,Pike Push Up (Standard),shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+328,Band External Rotation,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+329,Band Internal Rotation,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+330,Trx Face Pull,shoulders,,,,,,,,,,,,trx,,,,,,,,,,
+331,Trx Y Fly,shoulders,,,,,,,,,,,,trx,,,,,,,,,,
+332,Trx T Fly,shoulders,,,,,,,,,,,,trx,,,,,,,,,,
+333,Band Pull-Apart,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+334,Floor Y Raise,shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+335,Diagonal Band Pull Apart,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+336,Dumbbell Front Raise,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+337,Band Front Raise,shoulders,,,,,,,,,,,,band,,,,,,,,,,
+338,Dumbbell Lateral Raise,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+339,Single-Arm Lateral Raise,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+340,Chest-Supported Lateral Raise,shoulders,,,,,,,,,,,,bench,,,,,,,,,,
+341,Band Upright Row,back,,,,,,,,,,,,band,,,,,,,,,,
+342,Scaption (Y Raise),shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+343,Bench Dip,triceps,,,,,,,,,,,,bench,,,,,,,,,,
+344,Trx Triceps Extension,triceps,,,,,,,,,,,,trx,,,,,,,,,,
+345,Dumbbell Tricep Kickback,triceps,,,,,,,,,,,,dumbbells,,,,,,,,,,
+346,Bench Tricep Kickback,triceps,,,,,,,,,,,,bench,,,,,,,,,,
+347,Band Triceps Extension,triceps,,,,,,,,,,,,band,,,,,,,,,,
+348,Skullcrusher (Light),triceps,,,,,,,,,,,,dumbbells,,,,,,,,,,
+349,Close Grip Dumbbell Bench Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+350,Chest-Supported Kickback,triceps,,,,,,,,,,,,bench,,,,,,,,,,
+351,Band Kickback,triceps,,,,,,,,,,,,band,,,,,,,,,,
+352,Band Single-Arm Triceps,triceps,,,,,,,,,,,,band,,,,,,,,,,
+353,Floor Triceps Press,shoulders,,,,,,,,,,,,bodyweight,,,,,,,,,,
+354,Trx Single-Arm Triceps,triceps,,,,,,,,,,,,trx,,,,,,,,,,
+355,Band Pushdown,triceps,,,,,,,,,,,,band,,,,,,,,,,
+356,Tate Press,shoulders,,,,,,,,,,,,dumbbells,,,,,,,,,,
+357,Diamond Push-Up,chest,,,,,,,,,,,,bodyweight,,,,,,,,,,
+358,Overhead Triceps Extension,triceps,,,,,,,,,,,,dumbbells,,,,,,,,,,
+359,Overhead Band Extension,triceps,,,,,,,,,,,,band,,,,,,,,,,
+360,Tree Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+361,Warrior Iii,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+362,Eagle Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+363,Boat Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+364,Side Plank (Yoga),core,,,,,,,,,,,,bodyweight,,,,,,,,,,
+365,Sun Salutation A,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+366,Warrior I,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+367,Warrior Ii,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+368,Reverse Warrior,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+369,Crescent Lunge,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+370,Triangle Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+371,Cat-Cow Stretch,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+372,Downward Facing Dog,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+373,Child'S Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+374,Thread The Needle,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+375,Savasana (Corpse Pose),yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+376,Seated Meditation,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+377,Pigeon Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+378,Seated Forward Bend,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+379,Supine Spinal Twist,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+380,Butterfly Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+381,Happy Baby Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+382,Cobra Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+383,Lizard Pose,yoga,,,,,,,,,,,,bodyweight,,,,,,,,,,
+384,Lateral Step Up,quads,,,,,,,,,,,,bodyweight,,,,,,,,,,
+385,Wall Roll Down,spine,,,,,,,,,,,,pilateswall,,,,,,,,,,
+386,Wall Roll Up,spine,,,,,,,,,,,,pilateswall,,,,,,,,,,
+387,Wall Angels,shoulders,,,,,,,,,,,,pilateswall,,,,,,,,,,
+388,Wall Arm Circles,shoulders,,,,,,,,,,,,pilateswall,,,,,,,,,,
+389,Wall Chest Opener,chest,,,,,,,,,,,,pilateswall,,,,,,,,,,
+390,Wall Scapula Slides,upper back,,,,,,,,,,,,pilateswall,,,,,,,,,,
+391,Wall Neck Alignment,neck,,,,,,,,,,,,pilateswall,,,,,,,,,,
+392,Wall Side Bend,obliques,,,,,,,,,,,,pilateswall,,,,,,,,,,
+393,Wall Spine Stretch Forward,spine,,,,,,,,,,,,pilateswall,,,,,,,,,,
+394,Wall Cat-Cow,spine,,,,,,,,,,,,pilateswall,,,,,,,,,,
+395,Wall Squat,quads,,,,,,,,,,,,pilateswall,,,,,,,,,,
+396,Wall Sit Hold,quads,,,,,,,,,,,,pilateswall,,,,,,,,,,
+397,Wall Bridge Prep,glutes,,,,,,,,,,,,pilateswall,,,,,,,,,,
+398,Wall Pelvic Tilt,core,,,,,,,,,,,,pilateswall,,,,,,,,,,
+399,Wall Leg Slides,hip flexors,,,,,,,,,,,,pilateswall,,,,,,,,,,
+400,Wall Marching,hip flexors,,,,,,,,,,,,pilateswall,,,,,,,,,,
+401,Wall Single-Leg Press,shoulders,,,,,,,,,,,,pilateswall,,,,,,,,,,
+402,Wall Calf Raises,calves,,,,,,,,,,,,pilateswall,,,,,,,,,,
+403,Wall Side Leg Lift,glutes,,,,,,,,,,,,pilateswall,,,,,,,,,,
+404,Wall Standing Clamshell,glutes,,,,,,,,,,,,pilateswall,,,,,,,,,,
+405,Wall Plank Incliné,core,,,,,,,,,,,,pilateswall,,,,,,,,,,
+406,Wall Forearm Plank,core,,,,,,,,,,,,pilateswall,,,,,,,,,,
+407,Wall Push-Off Balance,core,,,,,,,,,,,,pilateswall,,,,,,,,,,
+408,Wall Bird-Dog Debout,core,,,,,,,,,,,,pilateswall,,,,,,,,,,
+409,Wall Toe Taps,hip flexors,,,,,,,,,,,,pilateswall,,,,,,,,,,
+410,Wall Heel Slides,hamstrings,,,,,,,,,,,,pilateswall,,,,,,,,,,
+411,Wall Push-Up,chest,,,,,,,,,,,,pilateswall,,,,,,,,,,
+412,Wall Wide Push-Up,chest,,,,,,,,,,,,pilateswall,,,,,,,,,,
+413,Wall One-Arm Push-Up,chest,,,,,,,,,,,,pilateswall,,,,,,,,,,
+414,Wall Triceps Extension,triceps,,,,,,,,,,,,pilateswall,,,,,,,,,,
+415,Wall Diamond Push-Up,chest,,,,,,,,,,,,pilateswall,,,,,,,,,,
+416,Wall Lat Pull-Down,back,,,,,,,,,,,,pilateswall,,,,,,,,,,
+417,Wall Isometric Row,back,,,,,,,,,,,,pilateswall,,,,,,,,,,
+418,Wall Bicep Iso Press,shoulders,,,,,,,,,,,,pilateswall,,,,,,,,,,
+419,Wall Y-W-T Raises,shoulders,,,,,,,,,,,,pilateswall,,,,,,,,,,
+420,Wall Handstand Prep,shoulders,,,,,,,,,,,,pilateswall,,,,,,,,,,
