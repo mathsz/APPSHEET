@@ -2382,11 +2382,15 @@ function doGet(e) {
   try {
     const params = e && e.parameter ? e.parameter : {};
 
+    const rawPage = String(params.page || '');
+    const page = rawPage.trim().toLowerCase();
+    const pageCompact = page.replace(/[^a-z0-9]/g, '');
+
     // Default UI: if opened as a normal link (no action/token), show the timer.
     // This makes it easy to open from AppSheet with a simple /exec URL.
     const hasAction = params.action != null && String(params.action).trim() !== '';
     const hasToken = params.token != null && String(params.token).trim() !== '';
-    const hasPage = params.page != null && String(params.page).trim() !== '';
+    const hasPage = rawPage.trim() !== '';
     if (!hasPage && !hasAction && !hasToken) {
       return HtmlService
         .createHtmlOutputFromFile('Timer')
@@ -2394,14 +2398,14 @@ function doGet(e) {
     }
 
     // Public UI route: open Timer.html in a webview (for AppSheet or browser)
-    if (String(params.page || '').toLowerCase() === 'timer') {
+    if (page === 'timer') {
       return HtmlService
         .createHtmlOutputFromFile('Timer')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
 
     // Public UI route: open TimerHIIT.html (dedicated HIIT timer page)
-    if (String(params.page || '').toLowerCase() === 'timerhiit') {
+    if (page === 'timerhiit' || pageCompact === 'timerhiit') {
       return HtmlService
         .createHtmlOutputFromFile('TimerHIIT')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

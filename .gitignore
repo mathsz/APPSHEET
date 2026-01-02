@@ -1,0 +1,16 @@
+# Local backups / scratch
+.backup*/
+.backup_*
+
+# Local-only files
+Code.js
+
+# Data exports / patches generated during maintenance
+exerciceDB.*
+exodb.*
+
+# Local notes / mapping exports
+APP_SHEET_CHANGE_PLAN.md
+appsheet_column_mapping.csv
+
+# clasp config is ok to track; keep .clasp.json

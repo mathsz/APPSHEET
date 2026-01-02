@@ -1,8 +1,12 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
-  "last_update": "2026-01-02T04:20:00Z",
+  "last_update": "2026-01-02T21:25:00Z",
   "notes": {
+    "ops_rule_clasp_sync": {
+      "date": "2026-01-02",
+      "rule": "When behavior looks stale after a clasp push, always verify the file list in the Apps Script editor immediately. The editor can fail to refresh / show newly pushed files, which can mislead debugging. If the list is not updated, treat it as a sync/project mismatch (wrong scriptId, cached editor, or push did not target the expected project) before doing more deployments."
+    },
     "menu_present": "Spreadsheet UI was showing Player/Yoga menu entries; remote Apps Script updated and deployed previously — reload spreadsheet or run onOpen to refresh the menu.",
     "recent_deployments": "versions up through 27 created (temporary web and API deployments used for testing)",
     "saveWorkout": "Updated to use Glide_Wod (clears Is_Done and writes to History)",
@@ -72,9 +76,16 @@
       "worker_requirement": "Worker must NOT follow redirects. Treat 302 as a success response for the webhook call, and return a simple 200 to AppSheet.",
       "worker_base_url": "https://snowy-union-763c.mathieuvalotaire.workers.dev/",
       "webapp_deployment_id": "AKfycbwFf94pa-ivS06V3EEmxn4xrOncE1lvVrNGvgaXuzPQws2fhq0bcy-W8Esa0-SUGTt9",
-      "webapp_deployed_version": 103,
+      "webapp_deployed_version": 112,
       "token": "TEMP_CREATE_SETS_TOKEN_20260101",
       "debug": "Apps Script stores last webhook payload and can dump it via doGet?action=DUMP_LAST_WEBHOOK (token-gated)."
+    }
+
+    ,"timer_route_notes": {
+      "date": "2026-01-02",
+      "symptom": "GET /exec?page=timerhiit sometimes returned {\"status\":\"ignored\"} while /exec?page=timer returned HTML.",
+      "fix": "Normalized doGet page routing to match timerhiit even if AppSheet injects unexpected characters; redeployed web app to version 112.",
+      "appsheet_action": "Prefer page=timerhiit with cache-buster v=112."
     }
 
     ,"generator_notes": {
