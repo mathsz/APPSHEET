@@ -814,7 +814,10 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'seeded', result})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({status: 'ignored'})).setMimeType(ContentService.MimeType.JSON);
+    // Debug: return params when ignored (mask token)
+    const debugParams = Object.assign({}, params);
+    if (debugParams.token) debugParams.token = '***';
+    return ContentService.createTextOutput(JSON.stringify({status: 'ignored', params: debugParams})).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: err.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
