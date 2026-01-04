@@ -22,8 +22,16 @@ function withProxy(url) {
 export async function getGlideWodSummary(email) {
   const { execUrl, token } = effectiveBackend()
   const url = `${execUrl}?action=GLIDE_WOD_SUMMARY&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
-  const res = await fetch(withProxy(url), { method: 'GET' })
-  return res.json()
+  // Try direct GET first (Apps Script often allows CORS for GET after redirect)
+  try {
+    const res = await fetch(url, { method: 'GET', redirect: 'follow', mode: 'cors', credentials: 'omit', cache: 'no-store' })
+    if (!res.ok) throw new Error('HTTP '+res.status)
+    return await res.json()
+  } catch (e) {
+    // Fallback to proxy worker
+    const res2 = await fetch(withProxy(url), { method: 'GET' })
+    return res2.json()
+  }
 }
 
 export async function replaceGlideExercise(glideId, equipment = '', muscle = '') {
