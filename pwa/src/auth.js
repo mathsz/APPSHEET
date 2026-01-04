@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import { FITBOOK_CONFIG } from './config.js'
+import { getGlideWodSummary, replaceGlideExercise } from './backend.js'
 
 let app, auth
 
@@ -66,11 +67,33 @@ function renderWorkouts(items) {
           <div class="muted">Order: ${it.order ?? ''}</div>
         </div>
         <div class="col actions">
-          <button data-id="${it.id || ''}" class="btn-replace">Replace</button>
+          <button data-id="${it.id || ''}" data-equip="${escapeAttr(it.equipment || '')}" data-muscle="${escapeAttr(it.muscles || '')}" class="btn-replace">Replace</button>
         </div>
       </div>
     </div>`
   )).join('')
+
+  list.onclick = async (ev) => {
+    const btn = ev.target.closest('.btn-replace')
+    if (!btn) return
+    const glideId = btn.getAttribute('data-id') || ''
+    const equipment = btn.getAttribute('data-equip') || ''
+    const muscle = btn.getAttribute('data-muscle') || ''
+    if (!glideId) return
+    setStatus('Replacing…')
+    try {
+      const res = await replaceGlideExercise(glideId, equipment, muscle)
+      if (res && res.status === 'ok') {
+        setStatus('Replaced. Refreshing…')
+        const email = document.getElementById('user-email')?.textContent || ''
+        if (email) await loadWorkouts(email)
+      } else {
+        setStatus('Replace failed')
+      }
+    } catch (e) {
+      setStatus('Network error')
+    }
+  }
 }
 
 function escapeHtml(s) {
@@ -80,15 +103,14 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;')
 }
 
+function escapeAttr(s) {
+  return String(s || '').replace(/\"/g, '&quot;')
+}
+
 async function loadWorkouts(email) {
   setStatus('Loading…')
   try {
-    const cfg = FITBOOK_CONFIG?.backend || {}
-    const base = cfg.execUrl || ''
-    const token = cfg.token || ''
-    const url = `${base}?action=GLIDE_WOD_SUMMARY&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
-    const res = await fetch(url, { method: 'GET' })
-    const json = await res.json()
+    const json = await getGlideWodSummary(email)
     if (json && json.status === 'ok') {
       renderWorkouts(json.sample || [])
       setStatus(`Rows: ${json.totalRows}`)
