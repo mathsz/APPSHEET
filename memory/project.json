@@ -1,7 +1,7 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
-  "last_update": "2026-01-02T21:25:00Z",
+  "last_update": "2026-01-02T22:10:00Z",
   "notes": {
     "milestones": [
       {
@@ -87,8 +87,8 @@
       "appsheet_to_appsscript": "Use Cloudflare Worker as proxy for AppSheet POST webhooks. Direct Apps Script /exec often fails in AppSheet because it returns a 302 redirect to script.googleusercontent; AppSheet/webhook clients may follow the redirect and break.",
       "worker_requirement": "Worker must NOT follow redirects. Treat 302 as a success response for the webhook call, and return a simple 200 to AppSheet.",
       "worker_base_url": "https://snowy-union-763c.mathieuvalotaire.workers.dev/",
-      "webapp_deployment_id": "AKfycbwFf94pa-ivS06V3EEmxn4xrOncE1lvVrNGvgaXuzPQws2fhq0bcy-W8Esa0-SUGTt9",
-      "webapp_deployed_version": 112,
+      "webapp_deployment_id": "AKfycbyb6d6YBVgn1awJ7W",
+      "webapp_exec_url": "https://script.google.com/macros/s/AKfycbyb6d6YBVgn1awJ7W/exec",
       "token": "TEMP_CREATE_SETS_TOKEN_20260101",
       "debug": "Apps Script stores last webhook payload and can dump it via doGet?action=DUMP_LAST_WEBHOOK (token-gated)."
     }

@@ -288,6 +288,7 @@ function replaceGlideWodExercise_(payload) {
   const userIdx = lower.indexOf('useremail');
   const equipIdx = lower.indexOf('equipment');
   const muscleIdx = lower.indexOf('muscles');
+  const doReplaceIdx = lower.indexOf('doreplace');
   const exNameIdx = lower.indexOf('exercise');
   const exIdIdx = lower.indexOf('exercise_id');
   const repsTextIdx = lower.indexOf('reps_text');
@@ -384,6 +385,9 @@ function replaceGlideWodExercise_(payload) {
   if (repsTextIdx !== -1) updates[repsTextIdx] = repsText;
   if (weightIdx !== -1) updates[weightIdx] = weightSugg;
   if (videoIdx !== -1) updates[videoIdx] = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(exoName);
+  // Allow AppSheet to trigger replacement by toggling DoReplace=TRUE.
+  // Once processed, reset it so the user can tap again later.
+  if (doReplaceIdx !== -1) updates[doReplaceIdx] = false;
 
   // Default per-set values only when blank.
   const defaultReps = isIsometric ? '' : 10;
@@ -734,6 +738,70 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
 
   const headers = data[0].map(h => String(h || '').trim());
   const hasHeader = headers.some(h => /email|user/i.test(h));
+  const headersLower = headers.map(h => String(h || '').trim().toLowerCase());
+
+  const idxOfAnySubstr_ = (needles) => {
+    const ns = (needles || []).map(n => String(n || '').trim().toLowerCase()).filter(Boolean);
+    if (ns.length === 0) return -1;
+    for (let i = 0; i < headersLower.length; i++) {
+      const h = headersLower[i] || '';
+      if (!h) continue;
+      for (const n of ns) {
+        if (h.includes(n)) return i;
+      }
+    }
+    return -1;
+  };
+
+  const pickBestHeaderIndex_ = (scorer) => {
+    let bestIdx = -1;
+    let bestScore = -999999;
+    for (let i = 0; i < headersLower.length; i++) {
+      const h = headersLower[i] || '';
+      if (!h) continue;
+      const score = scorer(h);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return (bestScore > 0) ? bestIdx : -1;
+  };
+
+  const scoreTargetCountHeader_ = (h) => {
+    let s = 0;
+    const hasEx = h.includes('exerc') || h.includes('exercise');
+    const hasCount = h.includes('count') || h.includes('nb') || h.includes('nombre') || h.includes('nbr');
+    const isDuration = h.includes('dur') || h.includes('minute') || (h === 'min') || h.includes('minutes');
+    const isHiiTSpecific = h.includes('hiit') || h.includes('tabata');
+    if (hasEx) s += 8;
+    if (hasCount) s += 4;
+    if (isHiiTSpecific) s -= 6;
+    if (isDuration) s -= 20;
+    return s;
+  };
+
+  const scoreSetCountHeader_ = (h) => {
+    let s = 0;
+    const hasSet = h.includes('set') || h.includes('sets');
+    const hasCount = h.includes('count') || h.includes('nb') || h.includes('nombre') || h.includes('nbr');
+    const isDuration = h.includes('dur') || h.includes('minute') || h.includes('min');
+    if (hasSet) s += 8;
+    if (hasCount) s += 4;
+    if (isDuration) s -= 20;
+    return s;
+  };
+
+  const scoreHiitMinutesHeader_ = (h) => {
+    let s = 0;
+    const hasHiit = h.includes('hiit') || h.includes('tabata');
+    const hasMinutes = h.includes('minute') || h.includes('minutes') || h.includes('dur') || (h === 'min');
+    const hasExercise = h.includes('exerc') || h.includes('exercise');
+    if (hasHiit) s += 10;
+    if (hasMinutes) s += 6;
+    if (hasExercise) s -= 10;
+    return s;
+  };
 
   // Prefer header-based lookup (robust to AppSheet schema changes)
   let emailIdx = hasHeader ? idxOfAny_(headers, ['UserEmail', 'Email', 'E-mail', 'Mail']) : -1;
@@ -755,6 +823,16 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
   let targetCountIdx = hasHeader ? idxOfAny_(headers, ['TargetCount', 'Target Count', 'Exercises', 'ExerciseCount', 'Nb_Exercices', 'Count']) : -1;
   let setCountIdx = hasHeader ? idxOfAny_(headers, ['SetCount', 'Set Count', 'Sets', 'Nb_Sets']) : -1;
 
+  // Extra resilience: pick best matching columns by scoring headers.
+  // This avoids the common bug: "Durée" (minutes) being mistaken for exercise count.
+  if (hasHeader) {
+    const bestTargetIdx = pickBestHeaderIndex_(scoreTargetCountHeader_);
+    if (bestTargetIdx !== -1) targetCountIdx = bestTargetIdx;
+
+    const bestSetIdx = pickBestHeaderIndex_(scoreSetCountHeader_);
+    if (bestSetIdx !== -1) setCountIdx = bestSetIdx;
+  }
+
   // HIIT settings (optional)
   let hiitMinutesIdx = hasHeader ? idxOfAny_(headers, ['HIIT_Minutes', 'HIIT Minutes', 'HIIT_Duration', 'HIIT Duration', 'DurationMinutes', 'Duration Minutes', 'Minutes', 'Durée', 'Duree']) : -1;
   let hiitWorkIdx = hasHeader ? idxOfAny_(headers, ['HIIT_WorkSeconds', 'HIIT WorkSeconds', 'HIIT_Work', 'WorkSeconds', 'Work Seconds', 'Work_s', 'Work']) : -1;
@@ -767,6 +845,28 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
   if (equipIdx === -1) equipIdx = 4;
   if (targetCountIdx === -1) targetCountIdx = 7;
   if (setCountIdx === -1) setCountIdx = 8;
+
+  // For HIIT, prefer a HIIT+minutes column if possible.
+  if (hasHeader) {
+    const bestHiitMinutesIdx = pickBestHeaderIndex_(scoreHiitMinutesHeader_);
+    if (bestHiitMinutesIdx !== -1) hiitMinutesIdx = bestHiitMinutesIdx;
+  }
+
+  // Smart fallback: some profiles have column H = Durée (minutes) and column I = Nombre d'exercices.
+  // In that case, the legacy fallback (H as targetCount) produces "20 exercises" when duration is 20.
+  if (headersLower.length >= 9) {
+    const h = headersLower[7] || '';
+    const i = headersLower[8] || '';
+    const hLooksLikeDuration = h.includes('dur') || h.includes('minute') || h.includes('min');
+    const iLooksLikeExercises = i.includes('exerc');
+    const hLooksLikeExercises = h.includes('exerc');
+    const iLooksLikeDuration = i.includes('dur') || i.includes('minute') || i.includes('min');
+    if (hLooksLikeDuration && iLooksLikeExercises) {
+      targetCountIdx = 8;
+    } else if (hLooksLikeExercises && iLooksLikeDuration) {
+      targetCountIdx = 7;
+    }
+  }
 
   // IMPORTANT: do not hard-stop at RECIPES_START_ROW.
   // Some workbooks have more users below the recipes section.
@@ -2421,6 +2521,165 @@ function doGet(e) {
       return HtmlService
         .createHtmlOutputFromFile('TimerHIIT')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+
+    if (params.action === 'DEBUG_PROFILE' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const email = String(params.email || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen = ss.getSheetByName(SHEET_GEN);
+      if (!shGen) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data = shGen.getDataRange().getValues();
+      const headers = (data && data[0]) ? data[0].map(h => String(h || '').trim()) : [];
+      const profile = getUserProfileConfig_(shGen, email);
+      const idx = (profile && profile.indices) ? profile.indices : {};
+      const pick = (i) => (i != null && i >= 0 && i < headers.length) ? headers[i] : null;
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'ok',
+        email: email,
+        selectedType: profile.selectedType,
+        programType: profile.programType,
+        targetCount: profile.targetCount,
+        setCount: profile.setCount,
+        hiit: profile.hiit,
+        indices: idx,
+        headersAtIndices: {
+          email: pick(idx.emailIdx),
+          selectedType: pick(idx.selectedTypeIdx),
+          programType: pick(idx.programTypeIdx),
+          equipment: pick(idx.equipIdx),
+          targetCount: pick(idx.targetCountIdx),
+          setCount: pick(idx.setCountIdx),
+          hiitMinutes: pick(idx.hiitMinutesIdx),
+          hiitWork: pick(idx.hiitWorkIdx),
+          hiitRest: pick(idx.hiitRestIdx)
+        }
+      }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Debug: return the raw UserProfile row for an email (headers + values)
+    if (params.action === 'DUMP_USERPROFILE_ROW' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const email = String(params.email || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen = ss.getSheetByName(SHEET_GEN);
+      if (!shGen) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data = shGen.getDataRange().getValues();
+      if (!data || data.length < 2) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email, headers: [], row: null}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const headers = data[0].map(h => String(h || '').trim());
+      const lower = headers.map(h => String(h || '').toLowerCase());
+      const emailIdx = lower.indexOf('email') !== -1 ? lower.indexOf('email') : 1;
+
+      const emailNorm = String(email).trim().toLowerCase();
+      let found = null;
+      for (let r = 1; r < data.length; r++) {
+        const v = String(data[r][emailIdx] || '').trim().toLowerCase();
+        if (v && v === emailNorm) { found = data[r]; break; }
+      }
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email, headers: headers, row: found}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Debug: summarize Glide_Wod rows for a given email (counts + sample rows)
+    if (params.action === 'GLIDE_WOD_SUMMARY' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const email = String(params.email || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      ensureGlideWodSchema_();
+      const sh = ss.getSheetByName(SHEET_GLIDE);
+      if (!sh) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'Glide_Wod missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data = sh.getDataRange().getValues();
+      if (!data || data.length < 2) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email, totalRows: 0, headers: [], sample: []}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const headers = data[0].map(h => String(h || '').trim());
+      const lower = headers.map(h => String(h || '').toLowerCase());
+      const userIdx = lower.indexOf('useremail');
+      const orderIdx = lower.indexOf('order');
+      const exIdx = lower.indexOf('exercise');
+      const exIdIdx = lower.indexOf('exercise_id');
+      const doneIdx = lower.indexOf('is_done');
+      const replaceIdx = lower.indexOf('doreplace');
+      const idIdx = lower.indexOf('id');
+
+      const emailNorm = String(email).trim().toLowerCase();
+      const rows = [];
+      for (let r = 1; r < data.length; r++) {
+        const u = userIdx !== -1 ? String(data[r][userIdx] || '').trim().toLowerCase() : '';
+        if (!u || u !== emailNorm) continue;
+        rows.push(data[r]);
+      }
+
+      // Sort by Order if present
+      if (orderIdx !== -1) {
+        rows.sort((a, b) => {
+          const av = parseFloat(a[orderIdx]);
+          const bv = parseFloat(b[orderIdx]);
+          if (isNaN(av) && isNaN(bv)) return 0;
+          if (isNaN(av)) return 1;
+          if (isNaN(bv)) return -1;
+          return av - bv;
+        });
+      }
+
+      const uniqueOrders = {};
+      const uniqueExercises = {};
+      rows.forEach((row) => {
+        const o = orderIdx !== -1 ? String(row[orderIdx] || '').trim() : '';
+        if (o) uniqueOrders[o] = true;
+        const eid = exIdIdx !== -1 ? String(row[exIdIdx] || '').trim() : '';
+        const en = exIdx !== -1 ? String(row[exIdx] || '').trim() : '';
+        const key = eid || en;
+        if (key) uniqueExercises[key] = true;
+      });
+
+      const sampleLimit = Math.min(60, rows.length);
+      const sample = [];
+      for (let i = 0; i < sampleLimit; i++) {
+        const row = rows[i];
+        sample.push({
+          id: idIdx !== -1 ? row[idIdx] : null,
+          order: orderIdx !== -1 ? row[orderIdx] : null,
+          exercise: exIdx !== -1 ? row[exIdx] : null,
+          exercise_id: exIdIdx !== -1 ? row[exIdIdx] : null,
+          is_done: doneIdx !== -1 ? row[doneIdx] : null,
+          doreplace: replaceIdx !== -1 ? row[replaceIdx] : null
+        });
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'ok',
+        email: email,
+        totalRows: rows.length,
+        uniqueOrderCount: Object.keys(uniqueOrders).length,
+        uniqueExerciseCount: Object.keys(uniqueExercises).length,
+        headers: headers,
+        sample: sample
+      }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
     if (params.action === 'DUMP_LAST_WEBHOOK' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
