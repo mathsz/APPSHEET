@@ -40,6 +40,8 @@ header { display: flex; justify-content: space-between; align-items: center; }
 header h1 { font-size: 1.8rem; margin: 0; }
 header #user-info { display: flex; gap: 0.5rem; align-items: center; }
 .hidden { display: none; }
+nav { display: flex; gap: 0.5rem; }
+nav button { background: #1a1a1a; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
 .card { padding: 1rem; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); }
