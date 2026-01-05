@@ -9,9 +9,15 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wrangler": "^4.54.0"
   },
   "dependencies": {
     "firebase": "^12.7.0"
-  }
+  },
+  "description": "Minimal offline-ready web app with Firebase Auth and Apps Script backend.",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

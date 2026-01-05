@@ -9,8 +9,8 @@ export const FITBOOK_CONFIG = {
     measurementId: "G-DJXSVF8BEH"
   },
   backend: {
-    execUrl: "https://script.google.com/macros/s/AKfycbyb6d6YBVgn1awJ7W/exec",
+    execUrl: "https://script.google.com/macros/s/AKfycbzVxQkTF811m77pO-4GlADGp_O-1KscdD23kaDFbZqYaD21-uR16LCSxeutJq8Ga3Mqfg/exec",
     token: "TEMP_CREATE_SETS_TOKEN_20260101",
-    proxyBase: "https://snowy-union-763c.mathieuvalotaire.workers.dev/"
+    proxyBase: "https://dawn-dream-8eb0.mathieuvalotaire.workers.dev/"
   }
 }

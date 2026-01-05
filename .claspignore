@@ -1,5 +1,14 @@
-# Ignore local-only duplicates that conflict with Apps Script filenames
-Code.js
+# Ignore non-Apps Script folders/files
+pwa/
+pwa/**
+node_modules/
+**/node_modules/**
+memory/
+backups/
+.git/
+.git/**
+.DS_Store
+appsscript.json
 
 # Optional: ignore backups
 .backup*/

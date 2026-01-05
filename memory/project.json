@@ -1,17 +1,18 @@
 {
   "description": "Automation agent for Fitbook Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
-  "last_update": "2026-01-02T22:10:00Z",
+  "last_update": "2026-01-04T10:20:00Z",
   "notes": {
     "milestones": [
       {
-        "date": "2026-01-02",
-        "name": "Milestone: TimerHIIT stable + repo cleanup",
+        "date": "2026-01-04",
+        "name": "HIIT fixes + UX polish",
         "summary": [
-          "Apps Script files confirmed via editor after clasp push.",
-          "Timer restored as Timer.html; dedicated HIIT page exists as TimerHIIT.html.",
-          "Web app redeployed to version 112; page=timerhiit now serves HTML (no {status:ignored}).",
-          "GitHub repository cleaned: removed backups/exports; added .gitignore; pushed clean state."
+          "Backend HIIT generator honors arbitrary minutes (e.g., 45/60).",
+          "PWA HIIT rounds forced to 40/20 cycles to avoid accidental 40/40 regressions.",
+          "Removed 'Exercice N:' labels; list shows exercise names only.",
+          "TimerHIIT remains 40/20 with triple beep between phases.",
+          "Added guardrails to avoid overwriting prior working behavior while prioritizing current fixes."
         ]
       }
     ],

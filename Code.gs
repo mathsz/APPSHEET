@@ -820,6 +820,7 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
   ) : -1;
 
   let equipIdx = hasHeader ? idxOfAny_(headers, ['Equipment', 'Equip', 'Matériel', 'Materiel']) : -1;
+  let aliasIdx = hasHeader ? idxOfAny_(headers, ['Alias', 'DisplayName', 'Display Name', 'Pseudo', 'Nickname']) : -1;
   let targetCountIdx = hasHeader ? idxOfAny_(headers, ['TargetCount', 'Target Count', 'Exercises', 'ExerciseCount', 'Nb_Exercices', 'Count']) : -1;
   let setCountIdx = hasHeader ? idxOfAny_(headers, ['SetCount', 'Set Count', 'Sets', 'Nb_Sets']) : -1;
 
@@ -834,7 +835,12 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
   }
 
   // HIIT settings (optional)
-  let hiitMinutesIdx = hasHeader ? idxOfAny_(headers, ['HIIT_Minutes', 'HIIT Minutes', 'HIIT_Duration', 'HIIT Duration', 'DurationMinutes', 'Duration Minutes', 'Minutes', 'Durée', 'Duree']) : -1;
+  // Accept both accented and non-accented, any case: Durée, Duree, DUREE
+  let hiitMinutesIdx = hasHeader ? idxOfAny_(headers, [
+    'HIIT_Minutes', 'HIIT Minutes', 'HIIT_Duration', 'HIIT Duration',
+    'DurationMinutes', 'Duration Minutes', 'Minutes',
+    'Durée', 'Duree', 'DUREE', 'DURÉE'
+  ]) : -1;
   let hiitWorkIdx = hasHeader ? idxOfAny_(headers, ['HIIT_WorkSeconds', 'HIIT WorkSeconds', 'HIIT_Work', 'WorkSeconds', 'Work Seconds', 'Work_s', 'Work']) : -1;
   let hiitRestIdx = hasHeader ? idxOfAny_(headers, ['HIIT_RestSeconds', 'HIIT RestSeconds', 'HIIT_Rest', 'RestSeconds', 'Rest Seconds', 'Rest_s', 'Rest']) : -1;
   let hiitAllowJumpsIdx = hasHeader ? idxOfAny_(headers, ['HIIT_AllowJumps', 'AllowJumps', 'Allow Jumps', 'Jumps', 'Sauts']) : -1;
@@ -902,6 +908,7 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
   const targetCount = parseInt(userRow[targetCountIdx], 10) || 8;
   const setCount = parseInt(userRow[setCountIdx], 10) || 3;
   const rawEquipText = String(userRow[equipIdx] || '').trim();
+  const alias = (aliasIdx !== -1) ? String(userRow[aliasIdx] || '').trim() : '';
 
   const hiitMinutesRaw = (hiitMinutesIdx !== -1) ? userRow[hiitMinutesIdx] : '';
   const hiitWorkRaw = (hiitWorkIdx !== -1) ? userRow[hiitWorkIdx] : '';
@@ -919,6 +926,7 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
     targetCount,
     setCount,
     rawEquipText,
+    alias,
     hiit: {
       minutes: isNaN(hiitMinutes) ? null : hiitMinutes,
       workSeconds: isNaN(hiitWorkSeconds) ? null : hiitWorkSeconds,
@@ -926,7 +934,7 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
       allowJumps: hiitAllowJumps
     },
     indices: {
-      emailIdx, selectedTypeIdx, programTypeIdx, equipIdx, targetCountIdx, setCountIdx,
+      emailIdx, selectedTypeIdx, programTypeIdx, equipIdx, aliasIdx, targetCountIdx, setCountIdx,
       hiitMinutesIdx, hiitWorkIdx, hiitRestIdx, hiitAllowJumpsIdx
     }
   };
@@ -983,10 +991,9 @@ function generateHIITWorkout(triggerEmail) {
     }
   } catch (e) {}
 
-  // Defaults (user decision): 40/20 and allowed durations
-  const allowedMinutes = [10, 15, 20, 25, 30];
-  const minutes = (profile.hiit && profile.hiit.minutes != null) ? parseInt(profile.hiit.minutes, 10) : 10;
-  const durationMinutes = allowedMinutes.indexOf(minutes) !== -1 ? minutes : 10;
+  // Defaults (user decision): 40/20; honor arbitrary durations
+  const minutesRaw = (profile.hiit && profile.hiit.minutes != null) ? parseInt(profile.hiit.minutes, 10) : 10;
+  const durationMinutes = (isNaN(minutesRaw) || minutesRaw <= 0) ? 10 : minutesRaw;
   const workSeconds = (profile.hiit && profile.hiit.workSeconds != null) ? parseInt(profile.hiit.workSeconds, 10) : 40;
   const restSeconds = (profile.hiit && profile.hiit.restSeconds != null) ? parseInt(profile.hiit.restSeconds, 10) : 20;
   const allowJumps = (profile.hiit && profile.hiit.allowJumps === true) ? true : false;
@@ -1111,8 +1118,12 @@ function generateHIITWorkout(triggerEmail) {
 
   const now = new Date();
   const intervalLabel = String(workSeconds) + '/' + String(restSeconds);
+  // Compute total intervals based on duration and work/rest cycle length
+  const totalSeconds = Math.max(1, parseInt(durationMinutes, 10)) * 60;
+  const cycleSeconds = Math.max(1, parseInt(workSeconds, 10) + parseInt(restSeconds, 10));
+  const intervalCount = Math.max(1, Math.floor(totalSeconds / cycleSeconds));
   const out = [];
-  for (let order = 1; order <= durationMinutes; order++) {
+  for (let order = 1; order <= intervalCount; order++) {
     const slotIdx = (order - 1) % picked.length;
     const round = Math.floor((order - 1) / picked.length) + 1;
     const slotInRound = ((order - 1) % picked.length) + 1;
@@ -1177,7 +1188,7 @@ function generateHIITWorkout(triggerEmail) {
 
   SpreadsheetApp.flush();
   lock.releaseLock();
-  console.log('>>> HIIT terminé pour ' + targetUserEmail + ' (' + durationMinutes + ' min)');
+  console.log('>>> HIIT terminé pour ' + targetUserEmail + ' (' + durationMinutes + ' min, ' + (out.length) + ' intervals)');
 }
 
 function getHiitTimerData_(userEmail) {
@@ -1295,6 +1306,45 @@ function setHiitIsDone(userEmail, order, isDone) {
   return setHiitIsDone_(userEmail, order, isDone);
 }
 
+function setHiitRoundDone_(userEmail, roundNumber, isDone) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_HIIT);
+  if (!sh || sh.getLastRow() < 2) return {status: 'error', msg: 'Glide_HIIT empty'};
+
+  const targetEmail = String(userEmail || '').trim();
+  if (!targetEmail) return {status: 'error', msg: 'missing userEmail'};
+  const rnd = parseInt(roundNumber, 10);
+  if (!Number.isFinite(rnd) || rnd <= 0) return {status: 'error', msg: 'invalid round'};
+
+  const lastCol = sh.getLastColumn();
+  const headers = sh.getRange(1, 1, 1, Math.max(1, lastCol)).getValues()[0].map(h => String(h || '').trim());
+  const lower = headers.map(h => h.toLowerCase());
+  const emailIdx = lower.indexOf('useremail');
+  const roundIdx = lower.indexOf('round');
+  const doneIdx = lower.indexOf('is_done');
+  if (emailIdx === -1 || roundIdx === -1 || doneIdx === -1) {
+    return {status: 'error', msg: 'Glide_HIIT schema missing required columns'};
+  }
+
+  const values = sh.getRange(2, 1, sh.getLastRow() - 1, lastCol).getValues();
+  let updated = 0;
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    const em = String(row[emailIdx] || '').trim().toLowerCase();
+    const r = parseInt(row[roundIdx], 10);
+    if (em === targetEmail.toLowerCase() && r === rnd) {
+      sh.getRange(2 + i, 1 + doneIdx).setValue(!!isDone);
+      updated++;
+    }
+  }
+  SpreadsheetApp.flush();
+  return {status: 'ok', userEmail: targetEmail, round: rnd, updated: updated, isDone: !!isDone};
+}
+
+function setHiitRoundDone(userEmail, roundNumber, isDone) {
+  return setHiitRoundDone_(userEmail, roundNumber, isDone);
+}
+
 function syncSetsFromGlideOutput_(ss, userEmail, glideOutputRows) {
   // Keep Sets sheet in sync for AppSheet workflows that still depend on it.
   try {
@@ -1406,6 +1456,23 @@ function generateWorkout(triggerEmail) {
   const targetCount = profile.targetCount;
   const setCount = profile.setCount;
   const rawEquipText = profile.rawEquipText;
+
+  // Safety: ensure Durée (minutes) is persisted in column H for Strength profiles
+  try {
+    const minutesVal = (profile && profile.hiit && profile.hiit.minutes) ? profile.hiit.minutes : null;
+    if (minutesVal != null) {
+      const pData2 = shGen.getDataRange().getValues();
+      const emailIdx2 = profile && profile.indices ? profile.indices.emailIdx : 1;
+      const wanted2 = String(targetUserEmail || requestedEmail || '').trim().toLowerCase();
+      for (let r = 1; r < pData2.length; r++) {
+        const cell2 = String(pData2[r][emailIdx2] || '').trim().toLowerCase();
+        if (cell2 && cell2 === wanted2) {
+          try { shGen.getRange(r + 1, 8).setValue(minutesVal); } catch (e) {}
+          break;
+        }
+      }
+    }
+  } catch (e) {}
 
   // Équipement
   let userEquip = [];
@@ -2375,6 +2442,107 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({status: "ok", result: result})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // Per-set completion: append a single set entry to History
+    // Expected: { action:"SET_DONE", token, Row:{ Glide_Wod_ID:"...", SetNumber:1, Reps:10, Load:50, UserEmail:"..." } }
+    if (data.action === "SET_DONE" && data.token === "TEMP_CREATE_SETS_TOKEN_20260101") {
+      const rowLower2 = {};
+      const rowObj2 = (data && (data.Row || data.row || data.Values || data.values)) ? (data.Row || data.row || data.Values || data.values) : null;
+      if (rowObj2 && typeof rowObj2 === 'object') {
+        Object.keys(rowObj2).forEach((k) => { rowLower2[normalizeKey_(k)] = rowObj2[k]; });
+      }
+      const glideId = String(readAnyField_(rowObj2, ['Glide_Wod_ID','glide_wod_id','GlideId','glideId','ID','id']) || '').trim();
+      const setNumber = parseInt(readAnyField_(rowObj2, ['SetNumber','set_number','set']) || '', 10);
+      const reps = readAnyField_(rowObj2, ['Reps','reps']) != null ? readAnyField_(rowObj2, ['Reps','reps']) : '';
+      const load = readAnyField_(rowObj2, ['Load','load']) != null ? readAnyField_(rowObj2, ['Load','load']) : '';
+      const userEmail = String(readAnyField_(rowObj2, ['UserEmail','userEmail','Email','email']) || actorEmail || '').trim();
+      const result = appendSingleSetToHistory_(glideId, setNumber, reps, load, userEmail);
+      return ContentService.createTextOutput(JSON.stringify({status: "ok", result: result})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Ensure a UserProfile row exists for a given email; append if missing
+    // Expected: { action:"ENSURE_USER_PROFILE", token, userEmail:"..." }
+    if (data.action === "ENSURE_USER_PROFILE" && data.token === "TEMP_CREATE_SETS_TOKEN_20260101") {
+      const targetEmail = String(explicitEmail || rowEmail || actorEmail || '').trim();
+      if (!targetEmail) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ssE = SpreadsheetApp.getActiveSpreadsheet();
+      const shGenE = ssE.getSheetByName(SHEET_GEN);
+      if (!shGenE) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const dataE = shGenE.getDataRange().getValues();
+      const headersE = (dataE && dataE[0]) ? dataE[0].map(h => String(h || '').trim()) : [];
+      let emailIdxE = idxOfAny_(headersE, ['UserEmail', 'Email', 'E-mail', 'Mail']);
+      if (emailIdxE === -1) emailIdxE = 1; // legacy fallback
+      const wantedE = targetEmail.toLowerCase();
+      let rowNumE = -1;
+      for (let r = 1; r < dataE.length; r++) {
+        const v = String(dataE[r][emailIdxE] || '').trim().toLowerCase();
+        if (v && v === wantedE) { rowNumE = r + 1; break; }
+      }
+      if (rowNumE !== -1) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'ok', existed: true, email: targetEmail}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      // Append row with email set, other cells blank
+      const lastColE = shGenE.getLastColumn();
+      const newRow = new Array(Math.max(1, lastColE)).fill('');
+      newRow[emailIdxE] = targetEmail;
+      shGenE.appendRow(newRow);
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', created: true, email: targetEmail}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Setup (POST): allow writing Durée/DUREE minutes redundantly via Row payload.
+    // Expected: { action:"SET_USER_SETUP", token, Row:{ UserEmail:"...", DUREE:30 } }
+    if (data.action === "SET_USER_SETUP" && data.token === "TEMP_CREATE_SETS_TOKEN_20260101") {
+      const rowObj3 = (data && (data.Row || data.row || data.Values || data.values)) ? (data.Row || data.row || data.Values || data.values) : null;
+      const email3 = String(readAnyField_(rowObj3, ['UserEmail','userEmail','Email','email']) || explicitEmail || rowEmail || actorEmail || '').trim();
+      if (!email3) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss3 = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen3 = ss3.getSheetByName(SHEET_GEN);
+      if (!shGen3) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const prof3 = getUserProfileConfig_(shGen3, email3);
+      if (!prof3 || !prof3.indices) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'profile not found'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data3 = shGen3.getDataRange().getValues();
+      const emailIdx3 = prof3.indices.emailIdx != null ? prof3.indices.emailIdx : 1;
+      const target3 = email3.toLowerCase();
+      let rowNum3 = -1;
+      for (let r = 1; r < data3.length; r++) {
+        const v = String(data3[r][emailIdx3] || '').trim().toLowerCase();
+        if (v && v === target3) { rowNum3 = r + 1; break; }
+      }
+      if (rowNum3 === -1) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'user not found'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      // Pick minutes from multiple possible keys in Row
+      const minutes3Raw = readAnyField_(rowObj3, ['DUREE','Durée','duree','Minutes','minutes','durationMin','Duration','duration']);
+      const minutes3 = parseInt(minutes3Raw, 10);
+      if (prof3.indices.hiitMinutesIdx != null && prof3.indices.hiitMinutesIdx >= 0 && !isNaN(minutes3)) {
+        shGen3.getRange(rowNum3, prof3.indices.hiitMinutesIdx + 1).setValue(minutes3);
+      }
+      // Explicit fallback: also write to absolute column H (8) for Durée
+      if (!isNaN(minutes3)) {
+        try { shGen3.getRange(rowNum3, 8).setValue(minutes3); } catch (e) {}
+      }
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email3, minutes: isNaN(minutes3) ? null : minutes3}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({status: "ignored"}));
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({status: "error", msg: err.toString()}));
@@ -2489,10 +2657,75 @@ function completeGlideWodToHistory_(glideId, fallbackUserEmail) {
   return {status: 'ok', glideId: gid, historyRows: appended, userEmail: userEmail};
 }
 
+function appendSingleSetToHistory_(glideId, setNumber, reps, load, fallbackUserEmail) {
+  const gid = String(glideId || '').trim();
+  const sNum = parseInt(setNumber, 10);
+  if (!gid) return {status: 'error', msg: 'missing glideId'};
+  if (![1,2,3].includes(sNum)) return {status: 'error', msg: 'invalid setNumber'};
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureGlideWodSchema_();
+  const shGlide = ss.getSheetByName(SHEET_GLIDE);
+  if (!shGlide) return {status: 'error', msg: 'Glide_Wod missing'};
+
+  let shHist = ss.getSheetByName(SHEET_HIST);
+  if (!shHist) {
+    shHist = ss.insertSheet(SHEET_HIST);
+    shHist.appendRow(["Date", "Type", "Category", "Muscles", "Exercice", "Equip", "Reps", "Load", "Video", "Done", "UserEmail"]);
+  }
+
+  const data = shGlide.getDataRange().getValues();
+  if (data.length < 2) return {status: 'error', msg: 'Glide_Wod empty'};
+  const headers = data[0].map(h => String(h || '').trim());
+  const lower = headers.map(h => h.toLowerCase());
+  const idIdx = lower.indexOf('id');
+  const userIdx = lower.indexOf('useremail');
+  const catIdx = lower.indexOf('category');
+  const musIdx = lower.indexOf('muscles');
+  const exIdx = lower.indexOf('exercise');
+  const eqIdx = lower.indexOf('equipment');
+  const videoIdx = lower.indexOf('video_url');
+  const repsIdx = sNum === 1 ? lower.indexOf('set1_reps') : (sNum === 2 ? lower.indexOf('set2_reps') : lower.indexOf('set3_reps'));
+  const loadIdx = sNum === 1 ? lower.indexOf('set1_load') : (sNum === 2 ? lower.indexOf('set2_load') : lower.indexOf('set3_load'));
+
+  if (idIdx === -1) return {status: 'error', msg: 'Glide_Wod missing ID'};
+  let row = null;
+  let rowNum = -1;
+  for (let r = 1; r < data.length; r++) {
+    if (String(data[r][idIdx] || '').trim() === gid) { row = data[r]; rowNum = r + 1; break; }
+  }
+  if (!row) return {status: 'error', msg: 'glideId not found', glideId: gid};
+
+  const userEmail = String((userIdx !== -1 ? row[userIdx] : '') || fallbackUserEmail || '').trim();
+  const category = String(catIdx !== -1 ? row[catIdx] : '').trim();
+  const muscles = String(musIdx !== -1 ? row[musIdx] : '').trim();
+  const exercise = String(exIdx !== -1 ? row[exIdx] : '').trim();
+  const equip = String(eqIdx !== -1 ? row[eqIdx] : '').trim();
+  const video = String(videoIdx !== -1 ? row[videoIdx] : '').trim();
+
+  const now = new Date();
+  const finalReps = (reps != null && String(reps).trim() !== '') ? reps : (repsIdx !== -1 ? row[repsIdx] : '');
+  const finalLoad = (load != null && String(load).trim() !== '') ? load : (loadIdx !== -1 ? row[loadIdx] : '');
+  shHist.appendRow([now, 'AppSheet', category, muscles, exercise, equip, finalReps, finalLoad, video, true, userEmail]);
+
+  // Also persist reps/load back into Glide if values provided explicitly
+  if (rowNum !== -1) {
+    if (reps != null && repsIdx !== -1) shGlide.getRange(rowNum, repsIdx + 1).setValue(reps);
+    if (load != null && loadIdx !== -1) shGlide.getRange(rowNum, loadIdx + 1).setValue(load);
+  }
+
+  try { updateRecoveryDashboard(userEmail); } catch (e) {}
+  return {status: 'ok', glideId: gid, setNumber: sNum, userEmail: userEmail};
+}
+
 // Temporary, token-protected GET endpoint to trigger safe operations (one-shot use)
 function doGet(e) {
   try {
     const params = e && e.parameter ? e.parameter : {};
+    const actionTrim = String(params.action || '').trim();
+    const actionUp = actionTrim.toUpperCase();
+    const tokenTrim = String(params.token || '').trim();
+    const tokenOk = tokenTrim === 'TEMP_CREATE_SETS_TOKEN_20260101';
 
     const rawPage = String(params.page || '');
     const page = rawPage.trim().toLowerCase();
@@ -2547,6 +2780,7 @@ function doGet(e) {
         programType: profile.programType,
         targetCount: profile.targetCount,
         setCount: profile.setCount,
+        alias: profile.alias,
         hiit: profile.hiit,
         indices: idx,
         headersAtIndices: {
@@ -2554,6 +2788,7 @@ function doGet(e) {
           selectedType: pick(idx.selectedTypeIdx),
           programType: pick(idx.programTypeIdx),
           equipment: pick(idx.equipIdx),
+          alias: pick(idx.aliasIdx),
           targetCount: pick(idx.targetCountIdx),
           setCount: pick(idx.setCountIdx),
           hiitMinutes: pick(idx.hiitMinutesIdx),
@@ -2561,6 +2796,39 @@ function doGet(e) {
           hiitRest: pick(idx.hiitRestIdx)
         }
       }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Ensure a UserProfile row exists (GET variant for easier testing)
+    if (params.action === 'ENSURE_USER_PROFILE' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {
+      const email = String(params.email || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen = ss.getSheetByName(SHEET_GEN);
+      if (!shGen) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data = shGen.getDataRange().getValues();
+      const headers = (data && data[0]) ? data[0].map(h => String(h || '').trim()) : [];
+      let emailIdx = idxOfAny_(headers, ['UserEmail', 'Email', 'E-mail', 'Mail']);
+      if (emailIdx === -1) emailIdx = 1;
+      const wanted = email.toLowerCase();
+      for (let r = 1; r < data.length; r++) {
+        const v = String(data[r][emailIdx] || '').trim().toLowerCase();
+        if (v && v === wanted) {
+          return ContentService.createTextOutput(JSON.stringify({status: 'ok', existed: true, email: email}))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      const lastCol = shGen.getLastColumn();
+      const newRow = new Array(Math.max(1, lastCol)).fill('');
+      newRow[emailIdx] = email;
+      shGen.appendRow(newRow);
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok', created: true, email: email}))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -2665,6 +2933,16 @@ function doGet(e) {
           order: orderIdx !== -1 ? row[orderIdx] : null,
           exercise: exIdx !== -1 ? row[exIdx] : null,
           exercise_id: exIdIdx !== -1 ? row[exIdIdx] : null,
+          equipment: lower.indexOf('equipment') !== -1 ? row[lower.indexOf('equipment')] : null,
+          muscles: lower.indexOf('muscles') !== -1 ? row[lower.indexOf('muscles')] : null,
+          reps_text: lower.indexOf('reps_text') !== -1 ? row[lower.indexOf('reps_text')] : null,
+          video_url: lower.indexOf('video_url') !== -1 ? row[lower.indexOf('video_url')] : null,
+          set1_reps: lower.indexOf('set1_reps') !== -1 ? row[lower.indexOf('set1_reps')] : null,
+          set1_load: lower.indexOf('set1_load') !== -1 ? row[lower.indexOf('set1_load')] : null,
+          set2_reps: lower.indexOf('set2_reps') !== -1 ? row[lower.indexOf('set2_reps')] : null,
+          set2_load: lower.indexOf('set2_load') !== -1 ? row[lower.indexOf('set2_load')] : null,
+          set3_reps: lower.indexOf('set3_reps') !== -1 ? row[lower.indexOf('set3_reps')] : null,
+          set3_load: lower.indexOf('set3_load') !== -1 ? row[lower.indexOf('set3_load')] : null,
           is_done: doneIdx !== -1 ? row[doneIdx] : null,
           doreplace: replaceIdx !== -1 ? row[replaceIdx] : null
         });
@@ -2680,6 +2958,276 @@ function doGet(e) {
         sample: sample
       }))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Setup: set equipment preference for a user in UserProfile (token-gated)
+    if (actionUp === 'SET_USER_EQUIPMENT' && tokenOk) {
+      const email = String(params.email || '').trim();
+      const equipment = String(params.equipment || '').trim();
+      if (!email || !equipment) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email or equipment'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen = ss.getSheetByName(SHEET_GEN);
+      if (!shGen) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const prof = getUserProfileConfig_(shGen, email);
+      if (prof && prof.indices && prof.indices.equipIdx != null && prof.indices.equipIdx >= 0) {
+        // Find row for email
+        const data = shGen.getDataRange().getValues();
+        const emailIdx = prof.indices.emailIdx != null ? prof.indices.emailIdx : 1;
+        const target = email.toLowerCase();
+        let rowNum = -1;
+        for (let r = 1; r < data.length; r++) {
+          const v = String(data[r][emailIdx] || '').trim().toLowerCase();
+          if (v && v === target) { rowNum = r + 1; break; }
+        }
+        if (rowNum !== -1) {
+          shGen.getRange(rowNum, prof.indices.equipIdx + 1).setValue(equipment);
+          return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email, equipment: equipment}))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'user not found or equipment column missing'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Setup: bulk save key profile fields (programType, selectedType, setCount, duration)
+    if (actionUp === 'SET_USER_SETUP' && tokenOk) {
+      const email = String(params.email || '').trim();
+      const programType = String(params.programType || params.program || '').trim();
+      const selectedType = String(params.selectedType || params.sessionType || '').trim();
+      const setCountRaw = String(params.setCount || '').trim();
+      const durationRaw = String(params.durationMin || params.duration || '').trim();
+      const hiitWorkRaw = String(params.hiitWork || '').trim();
+      const hiitRestRaw = String(params.hiitRest || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen = ss.getSheetByName(SHEET_GEN);
+      if (!shGen) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      let prof = getUserProfileConfig_(shGen, email);
+      const data = shGen.getDataRange().getValues();
+      const headers = (data && data[0]) ? data[0].map(h => String(h || '').trim()) : [];
+      const headersLower = headers.map(h => String(h || '').trim().toLowerCase());
+      let emailIdx = (prof && prof.indices && prof.indices.emailIdx != null) ? prof.indices.emailIdx : idxOfAny_(headers, ['UserEmail', 'Email', 'E-mail', 'Mail']);
+      if (emailIdx === -1) emailIdx = 1;
+      const target = email.toLowerCase();
+      let rowNum = -1;
+      for (let r = 1; r < data.length; r++) {
+        const v = String(data[r][emailIdx] || '').trim().toLowerCase();
+        if (v && v === target) { rowNum = r + 1; break; }
+      }
+      if (rowNum === -1) {
+        // Profile missing: create a new UserProfile row for this email and continue
+        const lastColN = shGen.getLastColumn();
+        const newRowN = new Array(Math.max(1, lastColN)).fill('');
+        newRowN[emailIdx] = target;
+        shGen.appendRow(newRowN);
+        const newLastRow = shGen.getLastRow();
+        rowNum = newLastRow;
+        // Refresh profile indices after creation
+        prof = getUserProfileConfig_(shGen, email);
+      }
+
+      const idx = (prof && prof.indices) ? prof.indices : {
+        programTypeIdx: idxOfAny_(headers, ['ProgramType','WorkoutType','Workout Type','Discipline','Mode','Type_Programme','Type Programme']),
+        selectedTypeIdx: idxOfAny_(headers, ['SelectedType','SessionType','Type_Séance','Type Seance','Type_scéance_Voulue','Type_séance_Voulue','Séance','Seance','Programme','Program','Type']),
+        setCountIdx: idxOfAny_(headers, ['SetCount','Set Count','Sets','Nb_Sets']),
+        targetCountIdx: idxOfAny_(headers, ['TargetCount','Target Count','Exercises','ExerciseCount','Nb_Exercices','Count']),
+        hiitMinutesIdx: idxOfAny_(headers, ['HIIT_Minutes','HIIT Minutes','HIIT_Duration','HIIT Duration','DurationMinutes','Duration Minutes','Minutes','Durée','Duree','DUREE','DURÉE'])
+      };
+      function setIf(idx1, val) { if (idx1 != null && idx1 >= 0 && val !== '') shGen.getRange(rowNum, idx1 + 1).setValue(val); }
+
+      // Persist fields
+      setIf(idx.programTypeIdx, programType);
+      setIf(idx.selectedTypeIdx, selectedType);
+
+      const setCount = setCountRaw ? parseInt(setCountRaw, 10) : (prof.setCount || 3);
+      setIf(idx.setCountIdx, setCount);
+
+      const durationMin = durationRaw ? parseInt(durationRaw, 10) : null;
+      // Always persist minutes into the Durée/DUREE column when available
+      if (idx.hiitMinutesIdx != null && idx.hiitMinutesIdx >= 0 && durationMin) {
+        shGen.getRange(rowNum, idx.hiitMinutesIdx + 1).setValue(durationMin);
+      }
+      // Explicit fallback: also write to absolute column H (8) for Durée
+      if (durationMin) {
+        try { shGen.getRange(rowNum, 8).setValue(durationMin); } catch (e) {}
+      }
+      // Strength: derive targetCount from duration (approx 4 minutes per exercise by default)
+      if (String(programType).toLowerCase() !== 'hiit') {
+        const minutesPerExercise = Math.max(3, Math.round(((setCount || 3) * 60 + 60) / 60));
+        const targetCount = durationMin ? Math.max(1, Math.floor(durationMin / minutesPerExercise)) : (prof.targetCount || 8);
+        setIf(idx.targetCountIdx, targetCount);
+      } else {
+        // HIIT: optionally accept work/rest overrides
+        if (hiitWorkRaw && idx.hiitWorkIdx != null && idx.hiitWorkIdx >= 0) {
+          shGen.getRange(rowNum, idx.hiitWorkIdx + 1).setValue(parseInt(hiitWorkRaw, 10));
+        }
+        if (hiitRestRaw && idx.hiitRestIdx != null && idx.hiitRestIdx >= 0) {
+          shGen.getRange(rowNum, idx.hiitRestIdx + 1).setValue(parseInt(hiitRestRaw, 10));
+        }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Setup: save user alias (display name)
+    if (actionUp === 'SET_USER_ALIAS' && tokenOk) {
+      const email = String(params.email || '').trim();
+      const alias = String(params.alias || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const shGen = ss.getSheetByName(SHEET_GEN);
+      if (!shGen) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'UserProfile missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const prof = getUserProfileConfig_(shGen, email);
+      if (!prof || !prof.indices || prof.indices.aliasIdx == null || prof.indices.aliasIdx < 0) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'alias column missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data = shGen.getDataRange().getValues();
+      const emailIdx = prof.indices.emailIdx != null ? prof.indices.emailIdx : 1;
+      const target = email.toLowerCase();
+      let rowNum = -1;
+      for (let r = 1; r < data.length; r++) {
+        const v = String(data[r][emailIdx] || '').trim().toLowerCase();
+        if (v && v === target) { rowNum = r + 1; break; }
+      }
+      if (rowNum === -1) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'user not found'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      shGen.getRange(rowNum, prof.indices.aliasIdx + 1).setValue(alias);
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Debug: summarize Glide_HIIT rows for a given email (counts + sample rows)
+    if (actionUp === 'GLIDE_HIIT_SUMMARY' && tokenOk) {
+      const email = String(params.email || '').trim();
+      if (!email) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      ensureGlideHiitSchema_();
+      const sh = ss.getSheetByName(SHEET_HIIT);
+      if (!sh) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'Glide_HIIT missing'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const data = sh.getDataRange().getValues();
+      if (!data || data.length < 2) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email, totalRows: 0, headers: [], sample: []}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const headers = data[0].map(h => String(h || '').trim());
+      const lower = headers.map(h => String(h || '').toLowerCase());
+      const idIdx = lower.indexOf('id');
+      const userIdx = lower.indexOf('useremail');
+      const orderIdx = lower.indexOf('order');
+      const roundIdx = lower.indexOf('round');
+      const slotIdx = lower.indexOf('slot_in_round');
+      const exIdx = lower.indexOf('exercise');
+      const exIdIdx = lower.indexOf('exercise_id');
+      const workIdx = lower.indexOf('work_s');
+      const restIdx = lower.indexOf('rest_s');
+      const lblIdx = lower.indexOf('interval_label');
+      const videoIdx = lower.indexOf('video_url');
+      const doneIdx = lower.indexOf('is_done');
+
+      const emailNorm = String(email).trim().toLowerCase();
+      const rows = [];
+      for (let r = 1; r < data.length; r++) {
+        const u = userIdx !== -1 ? String(data[r][userIdx] || '').trim().toLowerCase() : '';
+        if (!u || u !== emailNorm) continue;
+        rows.push(data[r]);
+      }
+
+      // Sort by Order, Round, Slot
+      rows.sort((a, b) => {
+        const ao = orderIdx !== -1 ? parseFloat(a[orderIdx]) : 0;
+        const bo = orderIdx !== -1 ? parseFloat(b[orderIdx]) : 0;
+        if (ao !== bo) return ao - bo;
+        const ar = roundIdx !== -1 ? parseFloat(a[roundIdx]) : 0;
+        const br = roundIdx !== -1 ? parseFloat(b[roundIdx]) : 0;
+        if (ar !== br) return ar - br;
+        const as = slotIdx !== -1 ? parseFloat(a[slotIdx]) : 0;
+        const bs = slotIdx !== -1 ? parseFloat(b[slotIdx]) : 0;
+        return as - bs;
+      });
+
+      const sampleLimit = Math.min(120, rows.length);
+      const sample = [];
+      for (let i = 0; i < sampleLimit; i++) {
+        const row = rows[i];
+        sample.push({
+          id: idIdx !== -1 ? row[idIdx] : null,
+          order: orderIdx !== -1 ? row[orderIdx] : null,
+          round: roundIdx !== -1 ? row[roundIdx] : null,
+          slot_in_round: slotIdx !== -1 ? row[slotIdx] : null,
+          exercise: exIdx !== -1 ? row[exIdx] : null,
+          exercise_id: exIdIdx !== -1 ? row[exIdIdx] : null,
+          work_s: workIdx !== -1 ? row[workIdx] : null,
+          rest_s: restIdx !== -1 ? row[restIdx] : null,
+          interval_label: lblIdx !== -1 ? row[lblIdx] : null,
+          video_url: videoIdx !== -1 ? row[videoIdx] : null,
+          is_done: doneIdx !== -1 ? row[doneIdx] : null
+        });
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'ok',
+        email: email,
+        totalRows: rows.length,
+        headers: headers,
+        sample: sample
+      }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Mark a single HIIT interval done/undone by order
+    if (actionUp === 'SET_HIIT_IS_DONE' && tokenOk) {
+      const email = String(params.email || '').trim();
+      const order = String(params.order || '').trim();
+      const doneRaw = params.isDone;
+      const isDone = String(doneRaw).toLowerCase() === 'true' || String(doneRaw) === '1' || doneRaw === true;
+      if (!email || !order) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email/order'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const res = setHiitIsDone(email, parseInt(order, 10), isDone);
+      return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Mark an entire HIIT round (set) done/undone
+    if (actionUp === 'SET_HIIT_SET_DONE' && tokenOk) {
+      const email = String(params.email || '').trim();
+      const round = String(params.round || '').trim();
+      const doneRaw = params.isDone;
+      const isDone = String(doneRaw).toLowerCase() === 'true' || String(doneRaw) === '1' || doneRaw === true;
+      if (!email || !round) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'missing email/round'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const res = setHiitRoundDone(email, parseInt(round, 10), isDone);
+      return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (params.action === 'DUMP_LAST_WEBHOOK' && params.token === 'TEMP_CREATE_SETS_TOKEN_20260101') {

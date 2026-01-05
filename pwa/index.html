@@ -12,9 +12,15 @@
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      }
+      // Register service worker only on non-local hosts to avoid dev caching issues.
+      (function() {
+        try {
+          var isLocal = ['localhost', '127.0.0.1'].indexOf(location.hostname) !== -1;
+          if ('serviceWorker' in navigator && !isLocal) {
+            navigator.serviceWorker.register('/sw.js').catch(function(){/* ignore */});
+          }
+        } catch (e) { /* ignore */ }
+      })();
     </script>
   </body>
 </html>
