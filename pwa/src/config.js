@@ -1,16 +1,16 @@
 export const FITBOOK_CONFIG = {
   firebase: {
-    apiKey: "AIzaSyDSP0t1DdI30ttlPpzJIpsGA3GM4ibpdUI",
-    authDomain: "workouts-generator-abdde.firebaseapp.com",
-    projectId: "workouts-generator-abdde",
-    storageBucket: "workouts-generator-abdde.firebasestorage.app",
-    messagingSenderId: "660272571716",
-    appId: "1:660272571716:web:dd577a5699499f440fe311",
-    measurementId: "G-DJXSVF8BEH"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ''
   },
   backend: {
-    execUrl: "https://script.google.com/macros/s/AKfycbzVxQkTF811m77pO-4GlADGp_O-1KscdD23kaDFbZqYaD21-uR16LCSxeutJq8Ga3Mqfg/exec",
-    token: "TEMP_CREATE_SETS_TOKEN_20260101",
-    proxyBase: "https://dawn-dream-8eb0.mathieuvalotaire.workers.dev/"
+    execUrl: import.meta.env.VITE_BACKEND_EXEC_URL || '',
+    token: import.meta.env.VITE_BACKEND_TOKEN || '',
+    proxyBase: import.meta.env.VITE_PROXY_BASE || ''
   }
 }
