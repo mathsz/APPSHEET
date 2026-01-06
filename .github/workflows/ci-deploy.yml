@@ -80,6 +80,9 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Install PWA deps (staging)
+        run: npm ci --prefix pwa
+
       - name: Build PWA (staging)
         run: npm --prefix pwa run build
 
