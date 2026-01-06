@@ -22,8 +22,13 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install root deps
-        run: npm ci
+      - name: Install root deps (if present)
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "No root package.json - skipping root install"
+          fi
 
       - name: Install PWA deps
         run: npm ci --prefix pwa
