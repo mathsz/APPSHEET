@@ -55,20 +55,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Optional: Create Apps Script version and note it in release"
-        if: ${{ secrets.GCP_SA_KEY != '' && secrets.CLASP_SCRIPT_ID != '' }}
-        env:
-          SA_JSON: ${{ secrets.GCP_SA_KEY }}
-          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
-          VERSION: ${{ github.event.inputs.version }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm install -g @google/clasp
-          echo "$SA_JSON" > sa-key.json
-          echo "{\"scriptId\": \"$CLASP_SCRIPT_ID\"}" > .clasp.json
-          npx clasp login --creds sa-key.json
-          # Create a new Apps Script version and capture output
-          VOUT=$(npx clasp version "Release ${VERSION}" 2>&1)
-          echo "Apps Script version output:\n$VOUT" > apps-script-version.txt
-          gh release upload "v${VERSION}" apps-script-version.txt --clobber || true
-          rm -f sa-key.json apps-script-version.txt
+      # Optional Apps Script version creation removed from this workflow to avoid requiring secrets in the release workflow parse step.
+      # To re-enable: create a separate workflow that runs only when the relevant secrets are configured, or use a secure manual step that runs with repository-protected environment approvals.
+
