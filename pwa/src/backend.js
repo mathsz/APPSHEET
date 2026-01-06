@@ -76,6 +76,18 @@ export async function completeGlideWod(glideId, userEmail) {
   return res.json()
 }
 
+// Set the Is_Done state (true/false) on a Glide WOD row; used for UNDO and batch saves
+export async function setGlideWodState(glideId, isDone = true, userEmail) {
+  const { execUrl, token } = effectiveBackend()
+  const body = { action: 'GLIDE_WOD_DONE', token, Row: { ID: glideId, Is_Done: !!isDone, UserEmail: userEmail || '' } }
+  const res = await fetch(withProxy(execUrl), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  return res.json()
+}
+
 export async function setDone(glideId, setNumber, reps, load, userEmail) {
   const { execUrl, token } = effectiveBackend()
   const body = { action: 'SET_DONE', token, Row: { Glide_Wod_ID: glideId, SetNumber: setNumber, Reps: reps, Load: load, UserEmail: userEmail || '' } }

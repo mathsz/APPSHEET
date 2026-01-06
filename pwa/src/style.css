@@ -61,6 +61,11 @@ nav { display: flex; gap: 0.5rem; }
 nav button { background: #111111; color: #ffffff; border: 1px solid #333333; padding: 0.35rem 0.6rem; font-size: 0.95rem; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+
+.workout-actions { display:flex; justify-content:center; margin-top:1rem }
+.workout-actions button { padding: 0.6rem 1rem; border-radius: 8px; background: #2563eb; color: #fff; border: 1px solid rgba(0,0,0,0.1); font-weight:600 }
+.workout-actions .secondary { background: transparent; color: inherit; border: 1px solid #ddd }
+
 .cards#setup-profile { display: block; }
 #profile-card { padding: 0.6rem; display: inline-block; }
 .alias-row { display: inline-flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }

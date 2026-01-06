@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import { FITBOOK_CONFIG } from './config.js'
-import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, completeGlideWod, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone } from './backend.js'
+import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, completeGlideWod, setGlideWodState, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone } from './backend.js'
 
 let app, auth
 
@@ -278,6 +278,67 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
         </div>
       </div>`
     }).join('')
+    // Append a Workout Complete / Save button under the list (avoid duplicates)
+    try {
+      const parent = list.parentElement
+      if (parent) {
+        const existing = parent.querySelector('.workout-actions')
+        if (existing) existing.remove()
+        const btnHtml = '<div class="workout-actions"><button id="btn-workout-complete">Workout complete</button></div>'
+        parent.insertAdjacentHTML('beforeend', btnHtml)
+        // Wire up click handler for batch save
+        try {
+          const btn = parent.querySelector('#btn-workout-complete')
+          if (btn) {
+            btn.onclick = async () => {
+              const cards = Array.from(document.querySelectorAll('#workout-list .card'))
+              if (!cards.length) return
+              const email = document.getElementById('user-email')?.textContent || ''
+              const anyNotDone = cards.some(c => !c.classList.contains('done-exercise'))
+              const newState = !!anyNotDone
+              setStatus(newState ? 'Marking workout complete…' : 'Unmarking workout…')
+              try { window.showLoading && window.showLoading('Saving…') } catch {}
+              // Optimistic UI
+              cards.forEach(c => {
+                if (newState) c.classList.add('done-exercise')
+                else c.classList.remove('done-exercise')
+                const strong = c.querySelector('strong')
+                if (newState) {
+                  if (strong && !strong.querySelector('.done-dot')) strong.insertAdjacentHTML('afterbegin', '<span class="done-dot done"></span>')
+                } else {
+                  try { const d = strong && strong.querySelector('.done-dot'); if (d) d.remove() } catch {}
+                }
+              })
+              try {
+                const ops = []
+                for (const c of cards) {
+                  const gid = c.getAttribute('data-id') || ''
+                  if (!gid) continue
+                  for (let s = 1; s <= 3; s++) {
+                    const reps = c.querySelector(`.s${s}-reps`)?.value || ''
+                    const load = c.querySelector(`.s${s}-load`)?.value || ''
+                    if (reps || load) ops.push(syncSetToGlide(gid, s, reps, load))
+                    const chk = c.querySelector(`.chk-done-set[data-set="${s}"]`)
+                    if (chk && (chk.checked || chk.disabled)) {
+                      ops.push(setDone(gid, s, reps, load, email))
+                    }
+                  }
+                  ops.push(setGlideWodState(gid, newState, email))
+                }
+                await Promise.all(ops)
+                setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
+              } catch (e) {
+                console.error('Failed batch save', e)
+                setStatus('Save failed')
+                try { await loadWorkouts(email) } catch {}
+              } finally {
+                try { window.hideLoading && window.hideLoading() } catch {}
+              }
+            }
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
   } else {
     // Detail mode: show a single expanded card
     list.classList.remove('list-mode')
@@ -389,8 +450,16 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
           let ok = false
           try {
             if (glideId) {
-              const res = await completeGlideWod(glideId, email)
-              ok = !!(res && res.status === 'ok')
+              if (newState) {
+                const res = await completeGlideWod(glideId, email)
+                ok = !!(res && res.status === 'ok')
+              } else {
+                // Unmark: write Is_Done = false back to Glide/Sheets
+                try {
+                  const res2 = await setGlideWodState(glideId, false, email)
+                  ok = !!(res2 && res2.status === 'ok')
+                } catch (e2) { /* ignore and fallback */ }
+              }
             }
           } catch {}
           // Fallback: mark each set done individually
