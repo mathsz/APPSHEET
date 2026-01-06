@@ -6,13 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "validate:exercises": "node scripts/validate-exercises.mjs",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "ajv": "^8.12.0",
     "vite": "^7.2.4",
-    "wrangler": "^4.54.0"
+    "wrangler": "^4.54.0",
+    "vitest": "^1.2.1"
   },
   "dependencies": {
+    "ajv-formats": "^3.0.1",
     "firebase": "^12.7.0"
   },
   "description": "Minimal offline-ready web app with Firebase Auth and Apps Script backend.",

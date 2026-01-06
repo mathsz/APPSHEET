@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Exercises list",
+  "description": "An array of exercise definitions used by the client generator",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["id", "name"],
+    "additionalProperties": false,
+    "properties": {
+      "id": { "type": "string" },
+      "name": { "type": "string" },
+      "discipline": { "type": "string", "enum": ["strength", "hiit", "mobility", "other"] },
+      "muscles": { "type": "array", "items": { "type": "string" } },
+      "equipment": { "type": "array", "items": { "type": "string" } },
+      "mode": { "type": "string", "enum": ["reps", "time", "amrap", "iso"] },
+      "value": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "reps": { "type": "integer", "minimum": 0 },
+          "load": { "type": ["number", "string"] },
+          "seconds": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "cues": { "type": "string" },
+      "video": { "type": "string", "format": "uri" },
+      "tags": { "type": "array", "items": { "type": "string" } },
+      "lastUpdated": { "type": "string", "format": "date-time" }
+    }
+  }
+}

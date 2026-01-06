@@ -9,6 +9,8 @@ function setStatus(msg) {
   const el = document.getElementById('status')
   if (el) el.textContent = msg || ''
 }
+// Make available globally so other modules (e.g., main.js) can call setStatus directly
+try { window.setStatus = setStatus } catch {}
 
 function renderUser(user) {
   const emailEl = document.getElementById('user-email')
@@ -545,7 +547,9 @@ async function loadHiitWorkouts(email) {
   setStatus('Loading HIIT…')
   try { window.showLoading && window.showLoading('Loading…') } catch {}
   try {
+    console.debug('loadHiitWorkouts start for', email)
     const json = await getGlideHiitSummary(email)
+    console.debug('getGlideHiitSummary result', json)
     if (json && json.status === 'ok') {
       // Map HIIT rows and include round/slot and rest
       let items = (json.sample || []).map(r => ({
@@ -575,9 +579,14 @@ async function loadHiitWorkouts(email) {
       // If no intervals exist, attempt to generate then reload
       if (!items.length) {
         setStatus('No HIIT yet. Generating…')
-        try { await generateHiit(email) } catch {}
+        try { 
+          console.debug('Calling generateHiit for', email)
+          await generateHiit(email) 
+          console.debug('generateHiit completed')
+        } catch (e) { console.warn('generateHiit failed', e) }
         try {
           const j2 = await getGlideHiitSummary(email)
+          console.debug('getGlideHiitSummary after generate result', j2)
           if (j2 && j2.status === 'ok') {
             items = (j2.sample || []).map(r => ({
               id: r.id,
@@ -602,7 +611,7 @@ async function loadHiitWorkouts(email) {
               if (total && items.length > total) items = items.slice(0, total)
             } catch {}
           }
-        } catch {}
+        } catch (e) { console.warn('post-generate getGlideHiitSummary failed', e) }
       }
       renderHiitRounds(items)
       setStatus(items.length ? `HIIT intervals: ${items.length}` : 'HIIT ready')
@@ -621,9 +630,68 @@ async function loadHiitWorkouts(email) {
         setStatus('Failed to load HIIT')
       }
     }
-    } catch (e) { setStatus('Network error') }
+  } catch (e) { 
+    console.warn('loadHiitWorkouts failed', e)
+    // Offline/Network fallback: try to derive HIIT intervals using cached exercises.json
+    try {
+      const minutesLS = localStorage.getItem('fitbook_hiit_minutes')
+      const minutes = minutesLS ? parseInt(minutesLS,10) : 20
+      const workLS = localStorage.getItem('fitbook_hiit_work')
+      const restLS = localStorage.getItem('fitbook_hiit_rest')
+      const work = workLS ? parseInt(workLS,10) : 40
+      const rest = restLS ? parseInt(restLS,10) : 20
+      const total = Math.max(1, Math.floor((minutes*60) / (work+rest)))
+
+      // Try to use cached exercises for variety
+      let cached = null
+      if (typeof caches !== 'undefined' && caches.match) {
+        try { cached = await caches.match('/exercises.json') } catch (e3) { cached = null }
+        if (!cached && caches.keys) {
+          try {
+            const keys = await caches.keys()
+            for (const k of keys) {
+              try {
+                const c = await caches.open(k)
+                const m = await c.match('/exercises.json')
+                if (m) { cached = m; break }
+              } catch (e4) {}
+            }
+          } catch (e5) {}
+        }
+      }
+
+      let items = []
+      if (cached) {
+        try {
+          const arr = await cached.json()
+          if (Array.isArray(arr) && arr.length) {
+            // Shuffle and pick `total` exercises (allow repeats if total > arr.length)
+            const shuffled = arr.slice().sort(() => Math.random() - 0.5)
+            for (let i = 0; i < total; i++) {
+              const ex = shuffled[i % shuffled.length] || shuffled[0]
+              items.push({ id: `offline_${i+1}`, order: i+1, round: Math.floor(i/5)+1, slot: (i%5)+1, exercise: ex.name || ex.exercise || `Exercise ${i+1}`, muscles: Array.isArray(ex.muscles) ? ex.muscles.join(', ') : (ex.muscles || ''), work_s: work, rest_s: rest })
+            }
+            console.debug('Using cached exercises for offline HIIT', {minutes, work, rest, total, sample: items.slice(0,3)})
+            renderHiitRounds(items)
+            setStatus(`HIIT intervals (offline, cached): ${items.length}`)
+            return
+          }
+        } catch (e6) { console.warn('Failed to read cached exercises', e6) }
+      }
+
+      // Fallback to simple placeholders
+      items = Array.from({length: total}, (_, i) => ({ id: `offline_${i+1}`, order: i+1, round: Math.floor(i/5)+1, slot: (i%5)+1, exercise: `Exercise ${i+1}`, muscles: `${work}/${rest}`, work_s: work, rest_s: rest }))
+      console.debug('Using offline HIIT placeholder fallback', {minutes, work, rest, total})
+      renderHiitRounds(items)
+      setStatus(`HIIT intervals (offline): ${items.length}`)
+    } catch (e2) {
+      console.warn('Offline HIIT fallback failed', e2)
+      setStatus('Network error')
+    }
+  } finally {
+    try { window.hideLoading && window.hideLoading() } catch {}
+  }
 }
-  try { window.hideLoading && window.hideLoading() } catch {}
 
 function renderHiitRounds(items) {
   const list = document.getElementById('workout-list')

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "28",
+    "name": "Kettlebell Curl",
+    "discipline": "strength",
+    "muscles": ["biceps"],
+    "equipment": ["kettlebell"],
+    "mode": "reps",
+    "value": { "reps": 10 },
+    "cues": "10-12 reps",
+    "video": "https://www.youtube.com/results?search_query=Kettlebell%20Curl",
+    "tags": ["upper","arms"],
+    "lastUpdated": "2026-01-05T00:00:00Z"
+  },
+  {
+    "id": "29",
+    "name": "Dumbbell Hammer Curl",
+    "discipline": "strength",
+    "muscles": ["biceps"],
+    "equipment": ["dumbbells"],
+    "mode": "reps",
+    "value": { "reps": 10 },
+    "cues": "10-12 reps",
+    "video": "https://www.youtube.com/results?search_query=Dumbbell%20Hammer%20Curl",
+    "tags": ["upper","arms"],
+    "lastUpdated": "2026-01-05T00:00:00Z"
+  },
+  {
+    "id": "75",
+    "name": "Kettlebell Deadlift",
+    "discipline": "strength",
+    "muscles": ["glutes"],
+    "equipment": ["kettlebell"],
+    "mode": "reps",
+    "value": { "reps": 10 },
+    "cues": "10-12 reps",
+    "video": "https://www.youtube.com/results?search_query=Kettlebell%20Deadlift",
+    "tags": ["lower","posterior-chain"],
+    "lastUpdated": "2026-01-05T00:00:00Z"
+  },
+  {
+    "id": "102",
+    "name": "One Arm Kettlebell Row",
+    "discipline": "strength",
+    "muscles": ["back"],
+    "equipment": ["kettlebell"],
+    "mode": "reps",
+    "value": { "reps": 10 },
+    "cues": "10-12 reps",
+    "video": "https://www.youtube.com/results?search_query=One%20Arm%20Kettlebell%20Row",
+    "tags": ["upper","pull"],
+    "lastUpdated": "2026-01-05T00:00:00Z"
+  }
+]

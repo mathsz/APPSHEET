@@ -2,6 +2,27 @@ import './style.css'
 import { initAuth } from './auth.js'
 import { enableWakeLock, releaseWakeLock } from './wakelock.js'
 
+// Ensure a global `window.setStatus` exists early so any module can call it safely.
+if (typeof window !== 'undefined' && !window.setStatus) {
+  window.setStatus = function(msg) {
+    try {
+      const el = document.getElementById('status')
+      if (el) el.textContent = msg || ''
+    } catch (e) {}
+  }
+}
+
+// Module-scoped helper that always delegates to the current `window.setStatus`.
+const setStatus = (msg) => {
+  try {
+    if (typeof window !== 'undefined' && typeof window.setStatus === 'function') {
+      return window.setStatus(msg)
+    }
+    const el = document.getElementById('status')
+    if (el) el.textContent = msg || ''
+  } catch (e) { /* ignore */ }
+}
+
 (async function(){
   try {
     const cfgUrl = (location && location.origin ? location.origin : '') + '/config.json'
@@ -151,6 +172,9 @@ root.innerHTML = `
 `
 
 initAuth()
+
+// setStatus is defined at module top to avoid race conditions; the auth
+// module may overwrite `window.setStatus` with a richer implementation.
 
 // Register service worker for offline exercises.json caching and auto-refresh
 if ('serviceWorker' in navigator) {
@@ -401,11 +425,52 @@ document.getElementById('nav-workouts')?.addEventListener('click', () => {
 
 // Dev: client-side generator integration for local testing
 document.getElementById('btn-generate-local')?.addEventListener('click', async () => {
-  setStatus('Loading exercises…')
+  // Local safe status helper to avoid runtime errors when a stale cookie of code
+  // defines or omits `window.setStatus` (defensive, helps during SW cache churn)
+  const safeSetStatus = (msg) => {
+    try {
+      if (typeof window !== 'undefined' && typeof window.setStatus === 'function') return window.setStatus(msg)
+      const el = document.getElementById('status')
+      if (el) el.textContent = msg || ''
+      else console.log('status:', msg)
+    } catch (e) { console.log('status fallback:', msg) }
+  }
+  safeSetStatus('Loading exercises…')
   try {
-    const res = await fetch('/exercises.json', { cache: 'no-store' })
-    if (!res.ok) throw new Error('fetch failed')
-    const j = await res.json()
+    let j
+    // Try network first; on failure (offline, CORS, etc.) fall back to the cache
+    try {
+      const res = await fetch('/exercises.json', { cache: 'no-store' })
+      if (res && res.ok) {
+        j = await res.json()
+      } else {
+        throw new Error('Network fetch failed')
+      }
+    } catch (netErr) {
+      console.warn('Network fetch failed, trying cache:', netErr)
+      // Try a generic match first
+      let cached = await caches.match('/exercises.json')
+      // If not found, iterate known caches and inspect each for the entry
+      if (!cached && typeof caches !== 'undefined' && caches.keys) {
+        try {
+          const keys = await caches.keys()
+          for (const k of keys) {
+            try {
+              const c = await caches.open(k)
+              const m = await c.match('/exercises.json')
+              if (m) { cached = m; break }
+            } catch (e) {}
+          }
+        } catch (e) {}
+      }
+      if (cached) {
+        j = await cached.json()
+      } else {
+        console.warn('No cached exercises.json found in any cache')
+        throw netErr
+      }
+    }
+
     const genMod = await import('./generator.js')
     genMod.loadExercises(j)
     const count = 5
@@ -425,11 +490,11 @@ document.getElementById('btn-generate-local')?.addEventListener('click', async (
     if (window.renderWorkoutsFromGenerated) {
       window.fitbookDetailId = null // ensure list/card mode
       window.renderWorkoutsFromGenerated(mapped)
-      setStatus('Generated ' + mapped.length + ' exercises')
+      safeSetStatus('Generated ' + mapped.length + ' exercises')
     } else if (window.renderWorkouts) {
       window.fitbookDetailId = null // ensure list/card mode
       window.renderWorkouts(mapped)
-      setStatus('Generated ' + mapped.length + ' exercises')
+      safeSetStatus('Generated ' + mapped.length + ' exercises')
     } else {
       // Fallback: simple render
       const list = document.getElementById('workout-list')
@@ -440,11 +505,11 @@ document.getElementById('btn-generate-local')?.addEventListener('click', async (
           </div>
         </div>
       `).join('')
-      setStatus('Generated ' + mapped.length + ' exercises')
+      safeSetStatus('Generated ' + mapped.length + ' exercises')
     }
   } catch (e) {
     console.error(e)
-    setStatus('Generate failed')
+    safeSetStatus('Generate failed')
   }
 })
 
