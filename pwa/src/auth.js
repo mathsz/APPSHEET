@@ -3,6 +3,93 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { FITBOOK_CONFIG } from './config.js'
 import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, completeGlideWod, setGlideWodState, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone } from './backend.js'
 
+// Local pending store helpers: store per-workout and queued batches
+const PENDING_KEY = 'fitbook_pending_workout'
+const PENDING_BATCHES = 'fitbook_pending_batches'
+
+function loadPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}') } catch { return {} }
+}
+function savePending(p) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(p || {})) } catch {}
+}
+function clearPendingForId(glideId) {
+  try { const p = loadPending(); delete p[glideId]; savePending(p); } catch {}
+}
+function enqueueBatch(batch) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(PENDING_BATCHES) || '[]')
+    arr.push(batch)
+    localStorage.setItem(PENDING_BATCHES, JSON.stringify(arr))
+    try { updateQueueIndicator() } catch (e) {}
+  } catch (e) {}
+} 
+async function flushPendingBatches() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(PENDING_BATCHES) || '[]')
+    if (!Array.isArray(arr) || !arr.length) return
+    // Try to send batches sequentially
+    const remaining = []
+    for (const b of arr) {
+      try {
+        const ops = []
+        const email = b.email || ''
+        for (const item of b.items || []) {
+          const gid = item.glideId
+          // sync sets
+          for (const s of item.sets || []) {
+            ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
+            ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+          }
+          // set row Is_Done
+          ops.push(setGlideWodState(gid, !!item.is_done, email))
+        }
+        await Promise.all(ops)
+        // on success, clear pending per-id
+        try { const p = loadPending(); for (const item of b.items || []) delete p[item.glideId]; savePending(p) } catch(e){}
+      } catch (e) {
+        // couldn't send this batch; keep it
+        remaining.push(b)
+      }
+    }
+    localStorage.setItem(PENDING_BATCHES, JSON.stringify(remaining))
+    try { updateQueueIndicator() } catch (e) {}
+  } catch (e) {}
+} 
+
+// Try flush when online
+try { window.addEventListener && window.addEventListener('online', () => { setTimeout(flushPendingBatches, 1000) }) } catch (e) {}
+
+// Queue indicator helpers
+function getPendingBatchCount() {
+  try { const arr = JSON.parse(localStorage.getItem(PENDING_BATCHES) || '[]'); return Array.isArray(arr) ? arr.length : 0 } catch { return 0 }
+}
+function updateQueueIndicator() {
+  try {
+    const el = document.getElementById('queue-indicator')
+    const cntEl = document.getElementById('queue-count')
+    const n = getPendingBatchCount()
+    if (cntEl) cntEl.textContent = String(n)
+    if (el) {
+      if (n > 0) el.classList.remove('hidden')
+      else el.classList.add('hidden')
+      el.onclick = () => {
+        try {
+          const arr = JSON.parse(localStorage.getItem(PENDING_BATCHES) || '[]')
+          const msg = Array.isArray(arr) && arr.length ? `You have ${arr.length} queued batch(es).` : 'No queued batches.'
+          // Minimal UI: use alert to surface count; can be enhanced later
+          alert(msg)
+        } catch (e) { alert('Unable to read queued batches') }
+      }
+    }
+  } catch {}
+}
+
+// Ensure indicator reflects current state on load
+try { setTimeout(updateQueueIndicator, 50) } catch {}
+
+
+
 let app, auth
 
 function setStatus(msg) {
@@ -284,8 +371,9 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       if (parent) {
         const existing = parent.querySelector('.workout-actions')
         if (existing) existing.remove()
-        const btnHtml = '<div class="workout-actions"><button id="btn-workout-complete">Workout complete</button></div>'
+        const btnHtml = '<div class="workout-actions"><button id="btn-workout-complete">Workout complete</button><div id="queue-indicator" class="queue-indicator hidden" title="Pending batches"><span id="queue-count">0</span> queued</div></div>'
         parent.insertAdjacentHTML('beforeend', btnHtml)
+        try { updateQueueIndicator() } catch (e) {}
         // Wire up click handler for batch save
         try {
           const btn = parent.querySelector('#btn-workout-complete')
@@ -294,11 +382,52 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
               const cards = Array.from(document.querySelectorAll('#workout-list .card'))
               if (!cards.length) return
               const email = document.getElementById('user-email')?.textContent || ''
-              const anyNotDone = cards.some(c => !c.classList.contains('done-exercise'))
+              // Build a batch first (no UI changes yet)
+              const pending = loadPending() || {}
+              const batch = { email, items: [] }
+              for (const c of cards) {
+                const gid = c.getAttribute('data-id') || ''
+                if (!gid) continue
+                const cardSets = []
+                for (let s = 1; s <= 3; s++) {
+                  const reps = c.querySelector(`.s${s}-reps`)?.value || ''
+                  const load = c.querySelector(`.s${s}-load`)?.value || ''
+                  const chk = c.querySelector(`.chk-done-set[data-set="${s}"]`)
+                  const done = !!(chk && (chk.checked || chk.disabled))
+                  const pset = (pending[gid] && pending[gid].sets) ? pending[gid].sets.find(x => x.setNumber === s) : null
+                  const entry = { setNumber: s, reps: pset ? pset.reps || reps : reps, load: pset ? pset.load || load : load, done: pset ? !!pset.done : done }
+                  if (entry.reps || entry.load || entry.done) cardSets.push(entry)
+                }
+                const prow = pending[gid] || {}
+                const item = { glideId: gid, is_done: prow.is_done === undefined ? c.classList.contains('done-exercise') : !!prow.is_done, sets: cardSets }
+                batch.items.push(item)
+              }
+              if (!batch.items.length) return
+              // Ask for confirmation
+              const confirmed = await (async function showConfirm(msg) {
+                try {
+                  const modal = document.getElementById('confirm-modal')
+                  const msgEl = document.getElementById('confirm-message')
+                  const yes = document.getElementById('confirm-yes')
+                  const no = document.getElementById('confirm-no')
+                  if (!modal || !msgEl || !yes || !no) return true
+                  msgEl.textContent = msg
+                  modal.classList.remove('hidden')
+                  return await new Promise((res) => {
+                    const onYes = () => { cleanup(); res(true) }
+                    const onNo = () => { cleanup(); res(false) }
+                    const cleanup = () => { try { yes.removeEventListener('click', onYes); no.removeEventListener('click', onNo); modal.classList.add('hidden') } catch (e) {} }
+                    yes.addEventListener('click', onYes)
+                    no.addEventListener('click', onNo)
+                  })
+                } catch (e) { return true }
+              })(`This will save ${batch.items.length} exercises to Google Sheets. Proceed?`)
+              if (!confirmed) return
+              const anyNotDone = batch.items.some(it => !it.is_done)
               const newState = !!anyNotDone
               setStatus(newState ? 'Marking workout complete…' : 'Unmarking workout…')
               try { window.showLoading && window.showLoading('Saving…') } catch {}
-              // Optimistic UI
+              // Optimistic UI now
               cards.forEach(c => {
                 if (newState) c.classList.add('done-exercise')
                 else c.classList.remove('done-exercise')
@@ -310,26 +439,27 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                 }
               })
               try {
-                const ops = []
-                for (const c of cards) {
-                  const gid = c.getAttribute('data-id') || ''
-                  if (!gid) continue
-                  for (let s = 1; s <= 3; s++) {
-                    const reps = c.querySelector(`.s${s}-reps`)?.value || ''
-                    const load = c.querySelector(`.s${s}-load`)?.value || ''
-                    if (reps || load) ops.push(syncSetToGlide(gid, s, reps, load))
-                    const chk = c.querySelector(`.chk-done-set[data-set="${s}"]`)
-                    if (chk && (chk.checked || chk.disabled)) {
-                      ops.push(setDone(gid, s, reps, load, email))
+                if (!navigator.onLine) {
+                  enqueueBatch(batch)
+                  setStatus('Offline — saved locally and queued for sync')
+                } else {
+                  const ops = []
+                  for (const item of batch.items) {
+                    const gid = item.glideId
+                    for (const s of item.sets || []) {
+                      ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
+                      if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
                     }
+                    ops.push(setGlideWodState(gid, item.is_done, email))
                   }
-                  ops.push(setGlideWodState(gid, newState, email))
+                  await Promise.all(ops)
+                  try { const p = loadPending(); for (const it of batch.items) delete p[it.glideId]; savePending(p) } catch (e) {}
+                  setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
                 }
-                await Promise.all(ops)
-                setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
               } catch (e) {
                 console.error('Failed batch save', e)
-                setStatus('Save failed')
+                enqueueBatch(batch)
+                setStatus('Save failed — queued for retry')
                 try { await loadWorkouts(email) } catch {}
               } finally {
                 try { window.hideLoading && window.hideLoading() } catch {}
@@ -430,9 +560,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       const btn = target.closest('.btn-save-sets')
       const isDoneNow = btn.getAttribute('data-done') === '1'
       const newState = !isDoneNow
-      const email = document.getElementById('user-email')?.textContent || ''
-      setStatus(newState ? 'Marking done…' : 'Unmarking…')
-      // Optimistic UI
+      // Local-only: update UI and pending store, do NOT write to backend here
       btn.setAttribute('data-done', newState ? '1' : '0')
       if (newState) { card.classList.add('done-exercise') } else { card.classList.remove('done-exercise') }
       const strong = card.querySelector('strong')
@@ -443,58 +571,15 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       } else {
         try { const d = strong && strong.querySelector('.done-dot'); if (d) d.remove() } catch {}
       }
-      try { window.showLoading && window.showLoading(newState ? 'Marking…' : 'Updating…') } catch {}
-      ;(async () => {
-        try {
-          // First try round-level completion (Glide WOD done)
-          let ok = false
-          try {
-            if (glideId) {
-              if (newState) {
-                const res = await completeGlideWod(glideId, email)
-                ok = !!(res && res.status === 'ok')
-              } else {
-                // Unmark: write Is_Done = false back to Glide/Sheets
-                try {
-                  const res2 = await setGlideWodState(glideId, false, email)
-                  ok = !!(res2 && res2.status === 'ok')
-                } catch (e2) { /* ignore and fallback */ }
-              }
-            }
-          } catch {}
-          // Fallback: mark each set done individually
-          if (!ok) {
-            const s1r = card.querySelector('.s1-reps')?.value || ''
-            const s1w = card.querySelector('.s1-load')?.value || ''
-            const s2r = card.querySelector('.s2-reps')?.value || ''
-            const s2w = card.querySelector('.s2-load')?.value || ''
-            const s3r = card.querySelector('.s3-reps')?.value || ''
-            const s3w = card.querySelector('.s3-load')?.value || ''
-            try { if (s1r || s1w) await setDone(glideId, 1, s1r, s1w, email) } catch {}
-            try { if (s2r || s2w) await setDone(glideId, 2, s2r, s2w, email) } catch {}
-            try { if (s3r || s3w) await setDone(glideId, 3, s3r, s3w, email) } catch {}
-            ok = true // best-effort
-          }
-          setStatus(newState ? 'Marked done' : 'Unmarked')
-          // Reload Strength list to reflect backend state only if we didn't perform best-effort per-set writes.
-          if (!ok) {
-            try { await loadWorkouts(email) } catch {}
-          } else {
-            // Best-effort per-set writes succeeded; keep optimistic UI (backend may not set Is_Done automatically)
-          }
-        } catch (e) {
-          // Revert optimistic UI on error
-          btn.setAttribute('data-done', isDoneNow ? '1' : '0')
-          if (isDoneNow) { card.classList.add('done-exercise') } else { card.classList.remove('done-exercise') }
-          if (isDoneNow) {
-            if (strong && !strong.querySelector('.done-dot')) strong.insertAdjacentHTML('afterbegin', '<span class="done-dot done"></span>')
-          } else {
-            try { const d = strong && strong.querySelector('.done-dot'); if (d) d.remove() } catch {}
-          }
-          setStatus('Network error')
-        }
-        try { window.hideLoading && window.hideLoading() } catch {}
-      })()
+      setStatus(newState ? 'Marked (local)' : 'Unmarked (local)')
+      // Persist pending state locally for this card
+      try {
+        const p = loadPending() || {}
+        const gid = glideId || ('gen_' + Math.random().toString(36).slice(2,9))
+        if (!p[gid]) p[gid] = { glideId: gid, is_done: !!newState, sets: [] }
+        else p[gid].is_done = !!newState
+        savePending(p)
+      } catch (e) { console.warn('failed save pending', e) }
       return
     }
 
@@ -507,13 +592,24 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       const load = card.querySelector(`.s${sNum}-load`)?.value || ''
       const restSel = card.querySelector(`.rest-select[data-set="${sNum}"]`)
       const rest = parseInt(restSel?.value||'60',10)
-      setStatus(`Set ${sNum} done. Starting ${rest}s rest…`)
+      // Local-only: save this set as done to pending store; start timer and disable
+      setStatus(`Set ${sNum} done (local). Starting ${rest}s rest…`)
       try {
-        if (reps || load) await syncSetToGlide(glideId, sNum, reps, load)
-        await setDone(glideId, sNum, reps, load, email)
+        // Save pending
+        const gid = glideId || ('gen_' + Math.random().toString(36).slice(2,9))
+        const p = loadPending() || {}
+        if (!p[gid]) p[gid] = { glideId: gid, is_done: false, sets: [] }
+        p[gid].sets = p[gid].sets || []
+        // Record or replace set entry
+        const idx = p[gid].sets.findIndex(s => s.setNumber === sNum)
+        const entry = { setNumber: sNum, reps: reps, load: load, done: true }
+        if (idx >= 0) p[gid].sets[idx] = entry
+        else p[gid].sets.push(entry)
+        savePending(p)
+        // Start timer & UI
         startCountdown(card.querySelector('.timer'), rest)
         doneChk.disabled = true
-        // If all set checkboxes are now disabled/checked, mark the exercise card as done
+        // If all set checkboxes are now disabled/checked, mark the exercise card as done (local)
         try {
           const all = Array.from(card.querySelectorAll('.chk-done-set'))
           const allDone = all.length > 0 && all.every(c => c.checked === true || c.disabled === true)
@@ -523,9 +619,12 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
             if (strong && !strong.querySelector('.done-dot')) {
               strong.insertAdjacentHTML('afterbegin', '<span class="done-dot done"></span>')
             }
+            // mark row-level pending done
+            p[gid].is_done = true
+            savePending(p)
           }
         } catch {}
-      } catch { setStatus('Failed to log set') }
+      } catch (e) { setStatus('Failed to save set locally') }
       return
     }
 

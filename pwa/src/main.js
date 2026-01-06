@@ -169,6 +169,18 @@ root.innerHTML = `
 
   <div id="toast" class="toast hidden"></div>
   <div id="loading" class="loading hidden"><div class="spinner"></div><div id="loading-text" class="loading-text">Loading…</div></div>
+
+  <!-- Confirmation modal -->
+  <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-content">
+      <h3 id="confirm-title">Confirm action</h3>
+      <div id="confirm-message">Are you sure?</div>
+      <div class="modal-actions">
+        <button id="confirm-yes">Confirm</button>
+        <button id="confirm-no" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
 `
 
 initAuth()
@@ -582,3 +594,46 @@ try {
   window.showLoading = showLoading
   window.hideLoading = hideLoading
 } catch {}
+
+// Override Setup Save to store locally and generate in PWA (no immediate backend writes)
+try {
+  const btn = document.getElementById('btn-save')
+  if (btn) {
+    btn.onclick = async (ev) => {
+      ev && ev.preventDefault && ev.preventDefault()
+      const statusEl = document.getElementById('setup-status')
+      const program = document.getElementById('setup-program-select')?.value || 'Strength'
+      const duration = parseInt(document.getElementById('setup-duration-select')?.value || '30', 10)
+      const sets = parseInt(document.getElementById('setup-sets')?.value || '3', 10)
+      const group = document.getElementById('setup-equip-group')
+      const vals = Array.from(group?.querySelectorAll('input[type="checkbox"]') || []).filter(cb => cb.checked).map(cb => cb.value)
+      const equipment = String(program).toLowerCase().includes('strength') ? vals.join(', ') : ''
+      statusEl.textContent = 'Saved locally — generating…'
+      showLoading('Generating…')
+      try {
+        try { localStorage.setItem('fitbook_program_type', program) } catch {}
+        try { localStorage.setItem('fitbook_duration_min', String(duration)) } catch {}
+        try { localStorage.setItem('fitbook_sets', String(sets)) } catch {}
+        try { localStorage.setItem('fitbook_equipment', equipment) } catch {}
+        // generate using cached exercises.json
+        let j
+        try { const res = await fetch('/exercises.json', { cache: 'no-store' }); if (res && res.ok) j = await res.json(); else throw new Error('fetch failed') } catch (e) { const cached = await caches.match('/exercises.json'); if (cached) j = await cached.json(); else throw e }
+        const genMod = await import('./generator.js')
+        genMod.loadExercises(j)
+        if (String(program).toLowerCase().includes('hiit')) {
+          const w = genMod.generateWorkout({ count: sets })
+          const mapped = w.map(it => ({ id: it.id || ('gen_' + Math.random().toString(36).slice(2,9)), exercise: it.name || it.exercise || '', muscles: Array.isArray(it.muscles) ? it.muscles.join(', ') : (it.muscles || ''), work_s: it.value && it.value.seconds ? it.value.seconds : 40, rest_s: 20 }))
+          if (window.renderWorkoutsFromGenerated) { window.fitbookDetailId = null; window.renderWorkoutsFromGenerated(mapped) } else if (window.renderWorkouts) { window.fitbookDetailId = null; window.renderWorkouts(mapped) }
+        } else {
+          const w = genMod.generateWorkout({ count: sets, constraints: { equipment: equipment || null } })
+          const mapped = w.map(it => ({ id: it.id || ('gen_' + Math.random().toString(36).slice(2,9)), exercise: it.name || it.exercise || '', muscles: Array.isArray(it.muscles) ? it.muscles.join(', ') : (it.muscles || ''), set1_reps: it.value && it.value.reps ? it.value.reps : '', set1_load: it.value && it.value.load ? it.value.load : '', set2_reps: '', set2_load: '', set3_reps: '', set3_load: '', is_done:false, video_url: it.video || '' }))
+          if (window.renderWorkoutsFromGenerated) { window.fitbookDetailId = null; window.renderWorkoutsFromGenerated(mapped) } else if (window.renderWorkouts) { window.fitbookDetailId = null; window.renderWorkouts(mapped) }
+        }
+        statusEl.textContent = 'Generated locally. Press "Workout complete" to save to Sheets.'
+        show('workouts')
+      } catch (e) { console.error('Local generate failed', e); statusEl.textContent = 'Generate failed — see console.' }
+      try { window.hideLoading && window.hideLoading() } catch {}
+    }
+  }
+} catch (e) {}
+

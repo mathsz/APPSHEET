@@ -62,9 +62,12 @@ nav button { background: #111111; color: #ffffff; border: 1px solid #333333; pad
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 
-.workout-actions { display:flex; justify-content:center; margin-top:1rem }
+.workout-actions { display:flex; justify-content:center; align-items:center; gap:0.75rem; margin-top:1rem }
 .workout-actions button { padding: 0.6rem 1rem; border-radius: 8px; background: #2563eb; color: #fff; border: 1px solid rgba(0,0,0,0.1); font-weight:600 }
 .workout-actions .secondary { background: transparent; color: inherit; border: 1px solid #ddd }
+.queue-indicator { margin-left: 0.75rem; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.04); color: #cbd5e1; padding: 0.35rem 0.6rem; border-radius: 8px; font-size: 0.9rem; }
+.queue-indicator.hidden { display: none }
+#queue-count { font-weight: 700; color: var(--done-green); margin-right: 0.25rem; }
 
 .cards#setup-profile { display: block; }
 #profile-card { padding: 0.6rem; display: inline-block; }
@@ -226,3 +229,13 @@ nav button.active { background: #0f172a; border-color: #3b82f6; }
 }
 /* Exercise image preview */
 .ex-img { display: block; max-width: 100%; border-radius: 8px; border: 1px solid #333; margin-top: 0.4rem; }
+
+/* Confirmation modal */
+.modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 10000 }
+.modal.hidden { display: none }
+.modal-content { background: #0b0b0b; border: 1px solid rgba(255,255,255,0.06); padding: 1rem 1.2rem; border-radius: 12px; width: 90%; max-width: 420px; text-align: left }
+.modal-content h3 { margin:0 0 0.5rem 0 }
+.modal-actions { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.75rem }
+.modal-actions button { padding:0.5rem 0.8rem; border-radius:8px }
+.modal-actions .secondary { background:transparent; border:1px solid #333; color:#fff }
+
