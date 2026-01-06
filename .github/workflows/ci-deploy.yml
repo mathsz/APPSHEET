@@ -1,4 +1,4 @@
-name: CI & Deploy
+name: "CI & Deploy"
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
     name: Staging Deploy (optional)
     needs: test-build
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/staging' && (secrets.FIREBASE_STAGING_TOKEN != '' || (secrets.GCP_SA_KEY_STAGING != '' && secrets.CLASP_SCRIPT_ID_STAGING != '')) }}
+    if: ${{ github.ref == 'refs/heads/staging' }}
     environment: staging
     steps:
       - name: Checkout
@@ -73,13 +73,13 @@ jobs:
       - name: Build PWA (staging)
         run: npm --prefix pwa run build
 
-- name: "Optional: Deploy PWA to Firebase staging"
+      - name: "Optional: Deploy PWA to Firebase staging"
         if: ${{ secrets.FIREBASE_STAGING_TOKEN != '' && secrets.FIREBASE_STAGING_PROJECT != '' }}
         run: |
           npm install -g firebase-tools
           firebase deploy --only hosting --project ${{ secrets.FIREBASE_STAGING_PROJECT }} --token ${{ secrets.FIREBASE_STAGING_TOKEN }}
 
-- name: "Optional: Deploy Apps Script to staging"
+      - name: "Optional: Deploy Apps Script to staging"
         if: ${{ secrets.GCP_SA_KEY_STAGING != '' && secrets.CLASP_SCRIPT_ID_STAGING != '' }}
         run: |
           npm install -g @google/clasp
