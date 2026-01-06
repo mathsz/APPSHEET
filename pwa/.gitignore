@@ -28,3 +28,6 @@ dist-ssr
 .env.local
 .env.*.local
 .env.*
+
+# Local public config (contains exec URL/token) - keep out of git
+/public/config.json

@@ -20,6 +20,17 @@ npm install
 - `backend.token`: security token (already set)
 - `backend.proxyBase`: Cloudflare Worker URL to avoid redirects and add CORS
 
+### Local runtime config (safe & gitignored)
+
+This PWA expects a runtime `public/config.json` with the backend values. For safety `public/config.json` is ignored by git and not committed. Use the example file to create your local config:
+
+```bash
+cp pwa/public/config.example.json pwa/public/config.json
+# edit pwa/public/config.json and set execUrl, token, proxyBase
+```
+
+If you need to test from a phone quickly, use the bookmarklet workflow or I can generate a small bookmarklet to seed values into localStorage.
+
 ## Run
 
 ```bash
