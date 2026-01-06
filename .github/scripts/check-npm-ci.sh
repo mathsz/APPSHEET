@@ -8,7 +8,8 @@ for f in .github/workflows/*.yml .github/workflows/*.yaml; do
   while IFS= read -r ln; do
     lineno=$(echo "$ln" | cut -d: -f1)
     line=$(echo "$ln" | cut -d: -f2-)
-    if echo "$line" | grep -q "--prefix"; then
+    # Use -- to stop grep treating patterns that start with - as options
+    if echo "$line" | grep -q -- --prefix; then
       continue
     fi
     start=$((lineno-6)); [ $start -lt 1 ] && start=1
