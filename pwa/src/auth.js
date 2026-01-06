@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import { FITBOOK_CONFIG } from './config.js'
-import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone } from './backend.js'
+import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, completeGlideWod, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone } from './backend.js'
 
 let app, auth
 
@@ -40,7 +40,8 @@ export function initAuth() {
     try {
       await signInWithPopup(auth, provider)
     } catch (e) {
-      setStatus('Sign-in failed')
+      console.error('Sign-in error', e)
+      setStatus('Sign-in failed: ' + (e && e.message ? e.message : ''))
     }
   }
   if (btnOut) btnOut.onclick = async () => {
@@ -48,6 +49,7 @@ export function initAuth() {
   }
 
   onAuthStateChanged(auth, (user) => {
+    console.log('onAuthStateChanged', !!user, user && user.email)
     renderUser(user || null)
   })
 
@@ -159,6 +161,17 @@ function startCountdown(tEl, secs, onComplete) {
   }, 1000)
 }
 
+// Helper to interpret various backend truthy values
+function parseBool(v) {
+  if (v === true || v === 1) return true
+  try {
+    const s = String(v || '').toLowerCase().trim()
+    return s === 'true' || s === '1' || s === 'yes'
+  } catch {
+    return false
+  }
+}
+
 function pauseTimer() {
   if (fitbookTimerInterval) {
     clearInterval(fitbookTimerInterval)
@@ -189,21 +202,51 @@ function renderWorkouts(items) {
   }
   const detailId = window.fitbookDetailId || null
   if (!detailId) {
-    // List mode: show compact list of exercises
-    list.classList.add('list-mode')
-    const currentId = window.fitbookHiitCurrentId || null
+    // Cards layout: render all exercises as expanded cards so sets/inputs are visible without clicking
+    list.classList.remove('list-mode')
     list.innerHTML = items.map((it, idx) => {
       const id = it.id || ''
+      const isCurrent = (window.fitbookHiitCurrentId && window.fitbookHiitCurrentId === id)
+      const isIso = (it.work_s != null) || String(it.reps_text || '').toLowerCase().includes('tenir') || String(it.exercise||'').toLowerCase().includes('plank')
+      const secs = it.work_s != null ? parseInt(it.work_s, 10) : guessIsoSeconds(String(it.reps_text||''))
       const exLabel = `Exercice ${idx+1}`
-      const isCurrent = currentId && currentId === id
+      const doneDot = (it.is_done === true) ? `<span class="done-dot done"></span>` : `<span class="done-dot"></span>`
       return `
-      <div class="card card-list-item ${isCurrent ? 'current-exercise' : ''}" data-id="${id}" title="Open details">
-        <div class="row">
-          <div class="col">
-            <strong>${escapeHtml(it.exercise || '')}</strong>
-            <div class="muted">${exLabel} • ${escapeHtml(it.muscles||'')}</div>
+        <div class="card ${isCurrent ? 'current-exercise' : ''} ${it.is_done ? 'done-exercise' : ''}" data-id="${id}">
+          <div class="row">
+            <div class="col">
+              <strong>${doneDot}${escapeHtml(it.exercise || '')}</strong>
+              <div class="muted">${exLabel} • ${escapeHtml(it.muscles||'')}</div>
+              ${it.video_url ? `<div class="muted"><a href="${escapeAttr(it.video_url)}" target="_blank">YouTube</a></div>` : ''}
+            </div>
+            <div class="col actions">
+              <button class="btn-save-sets" data-done="${it.is_done ? '1' : '0'}">${it.is_done ? 'Undo' : 'Done'}</button>
+              <button data-id="${id}" data-equip="${escapeAttr(it.equipment || '')}" data-muscle="${escapeAttr(it.muscles || '')}" class="btn-replace" title="Shuffle exercise"><span class="icon-shuffle" aria-hidden="true">🔀</span> <span class="label">Swap</span></button>
+            </div>
           </div>
-          <div class="col actions"><span class="muted">›</span></div>
+        <div class="timer"><span class="mm">00</span>:<span class="ss">00</span></div>
+        <div class="sets">
+          <div class="set-row">
+            <label>Set 1</label>
+            <input class="s1-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set1_reps ?? ''}">
+            <input class="s1-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set1_load ?? ''}">
+            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="1"> Done</label> <select class="rest-select" data-set="1"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
+          </div>
+          <div class="set-row">
+            <label>Set 2</label>
+            <input class="s2-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set2_reps ?? ''}">
+            <input class="s2-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set2_load ?? ''}">
+            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="2"> Done</label> <select class="rest-select" data-set="2"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
+          </div>
+          <div class="set-row">
+            <label>Set 3</label>
+            <input class="s3-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set3_reps ?? ''}">
+            <input class="s3-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set3_load ?? ''}">
+            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="3"> Done</label> <select class="rest-select" data-set="3"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
+          </div>
+          <div class="set-actions">
+            ${isIso ? `<button class="btn-timer" data-seconds="${secs}">Start ${secs}s</button><button class="btn-reset">Reset</button>` : ''}
+          </div>
         </div>
       </div>`
     }).join('')
@@ -226,7 +269,7 @@ function renderWorkouts(items) {
           ${it.video_url ? `<div class="muted"><a href="${escapeAttr(it.video_url)}" target="_blank">YouTube</a></div>` : ''}
         </div>
         <div class="col actions">
-          <button class="btn-back" title="Back to list">← Back</button>
+          <button class="btn-save-sets" data-done="${it.is_done ? '1' : '0'}">${it.is_done ? 'Undo' : 'Done'}</button>
           <button data-id="${id}" data-equip="${escapeAttr(it.equipment || '')}" data-muscle="${escapeAttr(it.muscles || '')}" class="btn-replace" title="Shuffle exercise"><span class="icon-shuffle" aria-hidden="true">🔀</span> <span class="label">Swap</span></button>
         </div>
       </div>
@@ -251,7 +294,6 @@ function renderWorkouts(items) {
           <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="3"> Done</label> <select class="rest-select" data-set="3"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
         </div>
         <div class="set-actions">
-          <button class="btn-save-sets">Save Sets</button>
           ${isIso ? `<button class="btn-timer" data-seconds="${secs}">Start ${secs}s</button><button class="btn-reset">Reset</button>` : ''}
         </div>
       </div>
@@ -266,16 +308,9 @@ function renderWorkouts(items) {
     if (!glideId) return
     const email = document.getElementById('user-email')?.textContent || ''
 
-    // Open details from list
+    // Strength list: open details when a list item is clicked so sets/inputs are editable
     if (target.closest('.card-list-item')) {
       window.fitbookDetailId = glideId
-      renderWorkouts(items)
-      return
-    }
-
-    // Back to list
-    if (target.closest('.btn-back')) {
-      window.fitbookDetailId = null
       renderWorkouts(items)
       return
     }
@@ -290,8 +325,7 @@ function renderWorkouts(items) {
         if (res && res.status === 'ok') {
           setStatus('Replaced. Refreshing…')
           if (email) {
-            // Stay in detail view on refresh
-            window.fitbookDetailId = glideId
+            // Refresh workouts but keep current view (do not force detail mode)
             await loadWorkouts(email)
           }
         } else {
@@ -302,19 +336,66 @@ function renderWorkouts(items) {
     }
 
     if (target.closest('.btn-save-sets')) {
-      setStatus('Saving sets…')
-      const s1r = card.querySelector('.s1-reps')?.value || ''
-      const s1w = card.querySelector('.s1-load')?.value || ''
-      const s2r = card.querySelector('.s2-reps')?.value || ''
-      const s2w = card.querySelector('.s2-load')?.value || ''
-      const s3r = card.querySelector('.s3-reps')?.value || ''
-      const s3w = card.querySelector('.s3-load')?.value || ''
-      try {
-        if (s1r || s1w) await syncSetToGlide(glideId, 1, s1r, s1w)
-        if (s2r || s2w) await syncSetToGlide(glideId, 2, s2r, s2w)
-        if (s3r || s3w) await syncSetToGlide(glideId, 3, s3r, s3w)
-        setStatus('Sets saved')
-      } catch { setStatus('Save failed') }
+      const btn = target.closest('.btn-save-sets')
+      const isDoneNow = btn.getAttribute('data-done') === '1'
+      const newState = !isDoneNow
+      const email = document.getElementById('user-email')?.textContent || ''
+      setStatus(newState ? 'Marking done…' : 'Unmarking…')
+      // Optimistic UI
+      btn.setAttribute('data-done', newState ? '1' : '0')
+      if (newState) { card.classList.add('done-exercise') } else { card.classList.remove('done-exercise') }
+      const strong = card.querySelector('strong')
+      if (newState) {
+        if (strong && !strong.querySelector('.done-dot')) {
+          strong.insertAdjacentHTML('afterbegin', '<span class="done-dot done"></span>')
+        }
+      } else {
+        try { const d = strong && strong.querySelector('.done-dot'); if (d) d.remove() } catch {}
+      }
+      try { window.showLoading && window.showLoading(newState ? 'Marking…' : 'Updating…') } catch {}
+      ;(async () => {
+        try {
+          // First try round-level completion (Glide WOD done)
+          let ok = false
+          try {
+            if (glideId) {
+              const res = await completeGlideWod(glideId, email)
+              ok = !!(res && res.status === 'ok')
+            }
+          } catch {}
+          // Fallback: mark each set done individually
+          if (!ok) {
+            const s1r = card.querySelector('.s1-reps')?.value || ''
+            const s1w = card.querySelector('.s1-load')?.value || ''
+            const s2r = card.querySelector('.s2-reps')?.value || ''
+            const s2w = card.querySelector('.s2-load')?.value || ''
+            const s3r = card.querySelector('.s3-reps')?.value || ''
+            const s3w = card.querySelector('.s3-load')?.value || ''
+            try { if (s1r || s1w) await setDone(glideId, 1, s1r, s1w, email) } catch {}
+            try { if (s2r || s2w) await setDone(glideId, 2, s2r, s2w, email) } catch {}
+            try { if (s3r || s3w) await setDone(glideId, 3, s3r, s3w, email) } catch {}
+            ok = true // best-effort
+          }
+          setStatus(newState ? 'Marked done' : 'Unmarked')
+          // Reload Strength list to reflect backend state only if we didn't perform best-effort per-set writes.
+          if (!ok) {
+            try { await loadWorkouts(email) } catch {}
+          } else {
+            // Best-effort per-set writes succeeded; keep optimistic UI (backend may not set Is_Done automatically)
+          }
+        } catch (e) {
+          // Revert optimistic UI on error
+          btn.setAttribute('data-done', isDoneNow ? '1' : '0')
+          if (isDoneNow) { card.classList.add('done-exercise') } else { card.classList.remove('done-exercise') }
+          if (isDoneNow) {
+            if (strong && !strong.querySelector('.done-dot')) strong.insertAdjacentHTML('afterbegin', '<span class="done-dot done"></span>')
+          } else {
+            try { const d = strong && strong.querySelector('.done-dot'); if (d) d.remove() } catch {}
+          }
+          setStatus('Network error')
+        }
+        try { window.hideLoading && window.hideLoading() } catch {}
+      })()
       return
     }
 
@@ -333,6 +414,18 @@ function renderWorkouts(items) {
         await setDone(glideId, sNum, reps, load, email)
         startCountdown(card.querySelector('.timer'), rest)
         doneChk.disabled = true
+        // If all set checkboxes are now disabled/checked, mark the exercise card as done
+        try {
+          const all = Array.from(card.querySelectorAll('.chk-done-set'))
+          const allDone = all.length > 0 && all.every(c => c.checked === true || c.disabled === true)
+          if (allDone) {
+            card.classList.add('done-exercise')
+            const strong = card.querySelector('strong')
+            if (strong && !strong.querySelector('.done-dot')) {
+              strong.insertAdjacentHTML('afterbegin', '<span class="done-dot done"></span>')
+            }
+          }
+        } catch {}
       } catch { setStatus('Failed to log set') }
       return
     }
@@ -379,7 +472,14 @@ async function loadWorkouts(email) {
   try {
     const json = await getGlideWodSummary(email)
     if (json && json.status === 'ok') {
-      renderWorkouts(json.sample || [])
+      // Normalize items to include a boolean `is_done` for Strength rows
+      const items = (json.sample || []).map(r => {
+        const raw = r || {}
+        const v = (raw.Is_Done !== undefined) ? raw.Is_Done : (raw.is_done !== undefined ? raw.is_done : '')
+        const isDoneFlag = parseBool(v)
+        return Object.assign({}, raw, { is_done: isDoneFlag })
+      })
+      renderWorkouts(items)
       setStatus(`Rows: ${json.totalRows}`)
     } else {
       setStatus('Failed to load')
@@ -410,7 +510,7 @@ async function loadHiitWorkouts(email) {
         rest_s: r.rest_s || 20,
         video_url: r.video_url || '',
         image_url: r.image_url || r.img_url || '',
-        is_done: (String(r.is_done).toLowerCase() === 'true' || r.is_done === true || r.is_done === 1)
+        is_done: parseBool(r.is_done)
       }))
       // Clamp to computed total based on selected duration if backend over-generates
       try {
@@ -493,11 +593,12 @@ function renderHiitRounds(items) {
     const work = 40
     const rest = 20
     const isAllDone = rows.every(it => (it.is_done === true))
+    const doneDotRound = isAllDone ? `<span class="done-dot done"></span>` : `<span class="done-dot"></span>`
     return `
     <div class="card hiit-round ${isAllDone ? 'disabled-card' : ''}" data-round="${rn}">
       <div class="row">
         <div class="col">
-          <strong>${label}</strong> <button class="btn-done-round" data-round="${rn}" data-done="${isAllDone ? '1' : '0'}">DONE</button>
+          <strong>${doneDotRound}${label}</strong> <button class="btn-done-round" data-round="${rn}" data-done="${isAllDone ? '1' : '0'}">DONE</button>
           <div class="muted">${work}/${rest} • ${rows.length} exercices</div>
         </div>
         <div class="col actions">
@@ -508,7 +609,10 @@ function renderHiitRounds(items) {
         </div>
       </div>
       <ul class="hiit-ex-list">
-        ${rows.map((it, idx) => `<li class="hiit-ex" data-id="${it.id}" data-order="${it.order}" data-slot="${it.slot}"><span class="ex-name">${idx+1}. ${escapeHtml(it.exercise||'')}</span>${it.video_url ? `<a class="ex-link" href="${escapeAttr(it.video_url)}" target="_blank" title="YouTube">YouTube ↗</a>` : ''}${it.image_url ? `<img class="ex-img" src="${escapeAttr(it.image_url)}" alt="Exercise image">` : ''}</li>`).join('')}
+        ${rows.map((it, idx) => {
+          const dot = (it.is_done === true) ? `<span class="done-dot done"></span>` : `<span class="done-dot"></span>`
+          return `<li class="hiit-ex" data-id="${it.id}" data-order="${it.order}" data-slot="${it.slot}">${dot}<span class="ex-name">${idx+1}. ${escapeHtml(it.exercise||'')}</span>${it.video_url ? `<a class="ex-link" href="${escapeAttr(it.video_url)}" target="_blank" title="YouTube">YouTube ↗</a>` : ''}${it.image_url ? `<img class="ex-img" src="${escapeAttr(it.image_url)}" alt="Exercise image">` : ''}</li>`
+        }).join('')}
       </ul>
       <div class="timer"><span class="mm">00</span>:<span class="ss">00</span></div>
     </div>`

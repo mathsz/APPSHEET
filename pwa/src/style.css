@@ -9,6 +9,11 @@
   color: #ffffff;
   background-color: #000000;
 
+  /* Theme variables */
+  --done-green: #22c55e;
+  --done-bg: #d6d6d6;
+  --done-text: #111111;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -41,14 +46,19 @@ h1 {
 #app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
 
 header { display: flex; justify-content: space-between; align-items: center; background: #000000; flex-wrap: wrap; gap: 0.5rem; }
+
+/* Inline header navigation; hamburger/sidebar removed */
+@media (max-width: 640px) {
+  header { flex-direction: column; align-items: flex-start; }
+}
 .alias-banner { text-align: center; margin: 0.5rem auto; padding: 0.3rem 0.6rem; max-width: 640px; }
 .alias-banner button { margin-left: 0.5rem; }
 header h1 { font-size: 1.8rem; margin: 0; color: #ffffff; }
-header #user-info { display: flex; gap: 0.5rem; align-items: center; }
+/* header user-info removed; auth controls moved into Setup view */
 .hidden { display: none; }
 nav { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 nav { display: flex; gap: 0.5rem; }
-nav button { background: #111111; color: #ffffff; border: 1px solid #333333; }
+nav button { background: #111111; color: #ffffff; border: 1px solid #333333; padding: 0.35rem 0.6rem; font-size: 0.95rem; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 .cards#setup-profile { display: block; }
@@ -68,6 +78,18 @@ nav button { background: #111111; color: #ffffff; border: 1px solid #333333; }
 /* Disabled card state for HIIT equipment */
 .card.disabled-card { background: #2b2f3a; border-color: #5b6675; opacity: 0.75; filter: grayscale(70%) brightness(0.92); }
 .card.disabled-card .muted { color: #b0b7c3; }
+
+/* Completed exercise (Strength) - light grey card with dark text */
+.card.done-exercise { background: var(--done-bg); color: var(--done-text); border-color: #d1d9e3; }
+.card.done-exercise .muted { color: #475569; }
+.card.done-exercise strong { color: var(--done-text); }
+/* Green circular done indicator shown next to exercise names */
+.done-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--done-green); margin-right: 0.6rem; vertical-align: middle; opacity: 0; transform: scale(0.85); transition: opacity 160ms ease, transform 160ms ease; }
+.done-dot.done { opacity: 1; transform: scale(1); }
+
+/* Make HIIT "all done" cards visually match Strength done state */
+.hiit-round.disabled-card { background: var(--done-bg); border-color: #d1d9e3; color: var(--done-text); }
+.hiit-round.disabled-card .muted { color: #475569; }
 
 .settings-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; max-width: 720px; }
 .settings-grid label { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 0.75rem; }
@@ -100,6 +122,7 @@ nav button { background: #111111; color: #ffffff; border: 1px solid #333333; }
 
 .card {
   padding: 2em;
+  position: relative;
 }
 
 .read-the-docs {
@@ -132,8 +155,14 @@ button:focus-visible {
 .set-row { display: grid; grid-template-columns: 64px 1fr 1fr; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
 .set-row label { color: #a3a3a3; }
 .set-row input { padding: 0.5rem; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; width: 100%; box-sizing: border-box; }
-.set-row-actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
+.set-row-actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; grid-column: 2 / 4; justify-content: space-between; }
+.set-row-actions .done-check { margin-right: auto; }
 .set-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.card .set-actions { position: static; top: auto; left: auto; margin-top: 0.4rem; }
+
+/* Done button styling */
+.btn-save-sets { padding: 0.45rem 0.8rem; border-radius: 999px; font-size: 0.95rem; background: #111; color: #fff; border: 1px solid #333; }
+.card.done-exercise .btn-save-sets { background: var(--done-bg); color: var(--done-text); border-color: #cfcfcf; }
 .timer { margin-top: 0.5rem; font-size: 1.4rem; font-weight: 600; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); padding: 0.4rem 0.6rem; border-radius: 8px; text-align: center; }
 .icon-shuffle { display: inline-block; margin-right: 0.3rem; }
 /* Equipment selector (checkbox chips) */
@@ -165,7 +194,7 @@ nav button.active { background: #0f172a; border-color: #3b82f6; }
 .hiit-ex-list { list-style: none; padding: 0; margin-top: 0.5rem; }
 .hiit-ex { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.6rem 0.6rem; margin: 0.2rem 0; border-radius: 8px; cursor: pointer; line-height: 1.4; }
 .hiit-ex.live { background: #e5e7eb; color: #000000; }
-.hiit-round.disabled-card { background: #1f2937; border-color: #4b5563; opacity: 0.65; }
+.hiit-round.disabled-card { background: var(--done-bg); border-color: #d1d9e3; color: var(--done-text); }
 .hiit-ex .ex-name { flex: 1 1 auto; }
 .hiit-ex .ex-link { flex: 0 0 auto; color: #8aa2ff; }
 .hiit-ex .ex-link:hover { color: #a5b6ff; }
@@ -173,7 +202,22 @@ nav button.active { background: #0f172a; border-color: #3b82f6; }
 @media (max-width: 640px) {
   header h1 { flex: 1 1 100%; }
   nav { flex: 1 1 100%; }
-  header #user-info { flex: 1 1 100%; justify-content: flex-end; }
+  /* header user-info removed */
+  
+  /* Setup: position auth controls at bottom-right */
+  #view-setup { position: relative; }
+  /* Place sign-in much lower and aligned left on mobile; reserve extra bottom space so it doesn't overlap content */
+  main { padding-bottom: 360px; }
+  #setup-user-info { position: fixed; left: 12px; right: auto; bottom: 18px; display: flex; gap: 0.5rem; align-items: center; max-width: calc(100% - 28px); justify-content: flex-start; z-index: 9999; }
+  #setup-user-info button { padding: 0.35rem 0.6rem; font-size: 0.9rem; }
+  /* Bottom alias input and layout */
+  .setup-user-info { background: rgba(11,11,11,0.9); border: 1px solid rgba(255,255,255,0.06); padding: 0.6rem; border-radius: 12px; }
+  .setup-user-row { display: flex; gap: 0.5rem; align-items: center; }
+  .setup-email { display: flex; flex-direction: column; margin-right: 0.5rem; }
+  .setup-email-label { font-size: 0.85rem; color: #cdd6e0; margin-bottom: 0.15rem }
+  .setup-email-value { font-size: 0.95rem; color: #ffffff }
+  #setup-alias-bottom { padding: 0.45rem 0.6rem; border-radius: 10px; border: 1px solid #2b2b2b; background: #0f1113; color: #fff; min-width: 160px }
+  #btn-save-alias-bottom { padding: 0.45rem 0.8rem; border-radius: 10px }
 }
 /* Exercise image preview */
 .ex-img { display: block; max-width: 100%; border-radius: 8px; border: 1px solid #333; margin-top: 0.4rem; }

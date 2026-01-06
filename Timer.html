@@ -353,10 +353,10 @@
           .setHiitIsDone(userEmail, item.order, newVal);
       }
 
-      document.getElementById('start').addEventListener('click', async () => {
-        await primeAudio();
-        if (hiitMode) return startHiit();
-        return startSingle();
+      document.getElementById('start').addEventListener('click', () => {
+        // Start immediately; prime audio asynchronously so UI isn't blocked
+        if (hiitMode) startHiit(); else startSingle();
+        primeAudio();
       });
       document.getElementById('pause').addEventListener('click', () => {
         if (hiitMode) return stopHiit();

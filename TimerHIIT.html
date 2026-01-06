@@ -661,7 +661,7 @@
             nextHiitPhaseOrExercise();
             if (!hiit.running) stop();
           }
-        }, 200);
+        }, 100);
       }
 
       function jumpToHiitIndex(newIdx) {
@@ -699,9 +699,10 @@
           .setHiitIsDone(userEmail, item.order, newVal);
       }
 
-      document.getElementById('start').addEventListener('click', async () => {
-        await primeAudio();
+      document.getElementById('start').addEventListener('click', () => {
+        // Start immediately; prime audio asynchronously so UI isn't blocked by audio permission checks
         startHiit();
+        primeAudio();
       });
       document.getElementById('pause').addEventListener('click', stopHiit);
       document.getElementById('reset').addEventListener('click', () => {

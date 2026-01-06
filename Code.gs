@@ -879,7 +879,18 @@ function getUserProfileConfig_(shGen, targetUserEmail) {
   let userRow = null;
   const target = String(targetUserEmail || '').trim().toLowerCase();
   for (let r = 1; r < data.length; r++) {
-    const candidate = String(data[r][emailIdx] || '').trim().toLowerCase();
+    let candidate = String(data[r][emailIdx] || '').trim().toLowerCase();
+    if (!candidate) {
+      // Fallback: search the whole row for the email if the expected column is empty.
+      for (let c = 0; c < data[r].length; c++) {
+        const cell = String(data[r][c] || '').trim().toLowerCase();
+        if (cell && cell === target) {
+          userRow = data[r];
+          break;
+        }
+      }
+      if (userRow) break;
+    }
     if (candidate && candidate === target) {
       userRow = data[r];
       break;
@@ -2424,7 +2435,8 @@ function doPost(e) {
       const glideId = String(rowLower['id'] || rowLower['glidewodid'] || readAnyField_(data, ['glideId', 'id', 'ID', 'Glide_Wod_ID']) || '').trim();
       const doneVal = rowLower['isdone'] != null ? rowLower['isdone'] : (rowLower['done'] != null ? rowLower['done'] : (readAnyField_(data, ['is_done', 'Is_Done', 'done', 'Done']) != null ? readAnyField_(data, ['is_done', 'Is_Done', 'done', 'Done']) : undefined));
       const isDone = String(doneVal).toLowerCase() === 'true' || String(doneVal) === '1' || doneVal === true;
-      const doneResult = isDone ? completeGlideWodToHistory_(glideId, userEmail) : {status: 'skipped', reason: 'not done'};
+      const userEmail = String(readAnyField_(data, ['UserEmail','userEmail','Email','email']) || explicitEmail || rowEmail || actorEmail || '').trim();
+      const doneResult = isDone ? completeGlideWodToHistory_(glideId, userEmail) : setGlideWodDoneState_(glideId, false, userEmail);
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', completed: isDone, result: doneResult}))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -2619,8 +2631,9 @@ function completeGlideWodToHistory_(glideId, fallbackUserEmail) {
 
   if (idIdx === -1) return {status: 'error', msg: 'Glide_Wod missing ID'};
   let row = null;
+  let rowNum = -1;
   for (let r = 1; r < data.length; r++) {
-    if (String(data[r][idIdx] || '').trim() === gid) { row = data[r]; break; }
+    if (String(data[r][idIdx] || '').trim() === gid) { row = data[r]; rowNum = r + 1; break; }
   }
   if (!row) return {status: 'error', msg: 'glideId not found', glideId: gid};
 
@@ -2654,7 +2667,56 @@ function completeGlideWodToHistory_(glideId, fallbackUserEmail) {
   }
 
   try { updateRecoveryDashboard(userEmail); } catch (e) {}
+  // Persist canonical done state on the Glide_Wod row so summaries reflect completion
+  try {
+    const doneIdx = lower.indexOf('is_done');
+    if (rowNum !== -1 && doneIdx !== -1) {
+      shGlide.getRange(rowNum, doneIdx + 1).setValue(true);
+    }
+    if (rowNum !== -1 && userIdx !== -1 && userEmail) {
+      shGlide.getRange(rowNum, userIdx + 1).setValue(userEmail);
+    }
+    SpreadsheetApp.flush();
+  } catch (e) {}
   return {status: 'ok', glideId: gid, historyRows: appended, userEmail: userEmail};
+}
+
+// Set or clear the Is_Done flag on a Glide_Wod row (used for UNDO operations)
+function setGlideWodDoneState_(glideId, isDone, fallbackUserEmail) {
+  const gid = String(glideId || '').trim();
+  if (!gid) return {status: 'error', msg: 'missing glideId'};
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureGlideWodSchema_();
+  const shGlide = ss.getSheetByName(SHEET_GLIDE);
+  if (!shGlide) return {status: 'error', msg: 'Glide_Wod missing'};
+
+  const data = shGlide.getDataRange().getValues();
+  if (data.length < 2) return {status: 'error', msg: 'Glide_Wod empty'};
+  const headers = data[0].map(h => String(h || '').trim());
+  const lower = headers.map(h => h.toLowerCase());
+  const idIdx = lower.indexOf('id');
+  const userIdx = lower.indexOf('useremail');
+  const doneIdx = lower.indexOf('is_done');
+  if (idIdx === -1) return {status: 'error', msg: 'Glide_Wod missing ID'};
+
+  let rowNum = -1;
+  for (let r = 1; r < data.length; r++) {
+    if (String(data[r][idIdx] || '').trim() === gid) { rowNum = r + 1; break; }
+  }
+  if (rowNum === -1) return {status: 'error', msg: 'glideId not found', glideId: gid};
+
+  try {
+    if (doneIdx !== -1) {
+      shGlide.getRange(rowNum, doneIdx + 1).setValue(isDone ? true : false);
+    }
+    if (userIdx !== -1 && fallbackUserEmail) {
+      shGlide.getRange(rowNum, userIdx + 1).setValue(fallbackUserEmail);
+    }
+    SpreadsheetApp.flush();
+    return {status: 'ok', glideId: gid, isDone: !!isDone};
+  } catch (e) {
+    return {status: 'error', msg: String(e)};
+  }
 }
 
 function appendSingleSetToHistory_(glideId, setNumber, reps, load, fallbackUserEmail) {
@@ -2857,7 +2919,15 @@ function doGet(e) {
       const emailNorm = String(email).trim().toLowerCase();
       let found = null;
       for (let r = 1; r < data.length; r++) {
-        const v = String(data[r][emailIdx] || '').trim().toLowerCase();
+        let v = String(data[r][emailIdx] || '').trim().toLowerCase();
+        if (!v) {
+          // Fallback: search entire row for the email value
+          for (let c = 0; c < data[r].length; c++) {
+            const cell = String(data[r][c] || '').trim().toLowerCase();
+            if (cell && cell === emailNorm) { found = data[r]; break; }
+          }
+          if (found) break;
+        }
         if (v && v === emailNorm) { found = data[r]; break; }
       }
       return ContentService.createTextOutput(JSON.stringify({status: 'ok', email: email, headers: headers, row: found}))

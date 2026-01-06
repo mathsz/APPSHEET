@@ -1,5 +1,26 @@
 import './style.css'
 import { initAuth } from './auth.js'
+import { enableWakeLock, releaseWakeLock } from './wakelock.js'
+
+(async function(){
+  try {
+    const cfgUrl = (location && location.origin ? location.origin : '') + '/config.json'
+    const res = await fetch(cfgUrl, { cache: 'no-store' })
+    if (!res || !res.ok) return
+    const cfg = await res.json()
+    const setIfEmpty = (key, val) => {
+      try {
+        const cur = localStorage.getItem(key)
+        if ((!cur || cur === 'null') && val) localStorage.setItem(key, val)
+      } catch {}
+    }
+    setIfEmpty('fitbook_exec_url', cfg.execUrl || '')
+    setIfEmpty('fitbook_token', cfg.token || '')
+    setIfEmpty('fitbook_proxy_base', cfg.proxyBase || '')
+  } catch (e) {
+    // ignore failures — app will fall back to built-in defaults or saved overrides
+  }
+})()
 
 const root = document.querySelector('#app')
 
@@ -12,16 +33,8 @@ root.innerHTML = `
       <button id="nav-fatigue">Fatigue</button>
       <button id="nav-settings">Settings</button>
     </nav>
-    <div id="user-info">
-      <span id="user-email">Not signed in</span>
-      <button id="btn-signin">Sign in</button>
-      <button id="btn-signout" class="hidden">Sign out</button>
-    </div>
   </header>
-  <div id="alias-banner" class="alias-banner hidden">
-    <span id="alias-text"></span>
-    <button id="alias-edit" title="Edit alias">Edit</button>
-  </div>
+  
 
   <main>
     <section id="view-setup" class="hidden">
@@ -99,6 +112,16 @@ root.innerHTML = `
         <button id="btn-save">Save</button>
       </div>
       <div class="status" id="setup-status"></div>
+      <div id="setup-user-info" class="setup-user-info hidden">
+        <div class="setup-user-row">
+          <div class="setup-email">
+            <div class="setup-email-label">Email:</div>
+            <div id="user-email" class="setup-email-value">Not signed in</div>
+          </div>
+          <button id="btn-signin">Sign in</button>
+          <button id="btn-signout" class="hidden">Sign out</button>
+        </div>
+      </div>
     </section>
     <section id="view-workouts">
       <h2>Workout</h2>
@@ -116,29 +139,7 @@ root.innerHTML = `
       <div class="status" id="fatigue-status"></div>
     </section>
 
-    <section id="view-settings" class="hidden">
-      <h2>Settings</h2>
-      <div class="settings-grid">
-        <label>
-          <span>Backend Exec URL</span>
-          <input id="cfg-exec-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
-        </label>
-        <label>
-          <span>Token</span>
-          <input id="cfg-token" type="text" placeholder="TEMP_CREATE_SETS_TOKEN_..." />
-        </label>
-        <label>
-          <span>Proxy Base (optional)</span>
-          <input id="cfg-proxy" type="text" placeholder="https://your-worker.example.dev/" />
-        </label>
-        <div class="settings-actions">
-          <button id="cfg-save">Save</button>
-          <button id="cfg-reset">Reset to defaults</button>
-          <button id="cfg-test">Test backend</button>
-        </div>
-      </div>
-      <div class="status" id="settings-status"></div>
-    </section>
+    <!-- Settings removed from inline Setup page to avoid accidental edits -->
   </main>
   <footer>
     <small>Fitbook PWA • Offline-ready</small>
@@ -150,6 +151,34 @@ root.innerHTML = `
 
 initAuth()
 
+// Settings view: visible only to two admin emails; hidden for everyone else
+;(function(){
+  const allowed = ['mathieuvalotaire@gmail.com']
+  function updateSettingsAccess(){
+    const email = (document.getElementById('user-email')?.textContent || '').trim().toLowerCase()
+    const authorized = allowed.includes(email)
+    // Toggle nav button visibility
+    const navBtn = document.getElementById('nav-settings')
+    if (navBtn) navBtn.style.display = authorized ? '' : 'none'
+    // Ensure the settings view is hidden for unauthorized users
+    const vSet = document.getElementById('view-settings')
+    if (vSet) vSet.classList.toggle('hidden', !authorized)
+    // Also disable inputs/buttons as an extra safety
+    const inputs = Array.from(document.querySelectorAll('#view-settings input'))
+    inputs.forEach(i => { try { i.disabled = !authorized } catch {} })
+    const saveBtn = document.getElementById('cfg-save')
+    const resetBtn = document.getElementById('cfg-reset')
+    if (saveBtn) saveBtn.disabled = !authorized
+    if (resetBtn) resetBtn.disabled = !authorized
+    // Keep Test available for all users
+    const status = document.getElementById('settings-status')
+    if (!authorized && status) status.textContent = 'Settings are available to admins only.'
+  }
+  // Run on startup and poll for auth changes (auth module updates #user-email)
+  updateSettingsAccess()
+  setInterval(updateSettingsAccess, 1000)
+})()
+
 function show(viewId) {
   const vW = document.getElementById('view-workouts')
   const vS = document.getElementById('view-setup')
@@ -160,7 +189,17 @@ function show(viewId) {
   if (vS) vS.classList.toggle('hidden', viewId !== 'setup')
   if (vF) vF.classList.toggle('hidden', viewId !== 'fatigue')
   if (vSet) vSet.classList.toggle('hidden', viewId !== 'settings')
+  // Show `setup-user-info` (email / sign in/out) only on the Setup view
+  try {
+    const ui = document.getElementById('setup-user-info')
+    if (ui) ui.classList.toggle('hidden', viewId !== 'setup')
+  } catch {}
   try { localStorage.setItem('fitbook_last_view', viewId) } catch {}
+  // Manage screen wake lock: enable when viewing workouts, release otherwise
+  try {
+    if (viewId === 'workouts') enableWakeLock()
+    else releaseWakeLock()
+  } catch {}
 }
 
 document.getElementById('nav-setup')?.addEventListener('click', async () => {
@@ -174,11 +213,9 @@ document.getElementById('nav-setup')?.addEventListener('click', async () => {
       const prof = await debugProfile(email)
       const box = document.getElementById('setup-profile')
       const p = prof || {}
-      const aliasVal = p.alias || ''
       box.innerHTML = `
         <div class="card" id="profile-card">
           <div>Email: ${email}</div>
-          <div class="alias-row ${aliasVal ? 'hidden' : ''}"><input id="setup-alias" type="text" placeholder="Pseudo (optional)" value="${aliasVal}"> <button id="setup-save-alias">Save Pseudo</button></div>
         </div>`
       // Preselect equipment checkboxes only for Strength; always clear for HIIT
       const group = document.getElementById('setup-equip-group')
@@ -236,12 +273,7 @@ document.getElementById('nav-setup')?.addEventListener('click', async () => {
       const dSel = document.getElementById('setup-duration-select')
       if (dSel && dur) dSel.value = String(dur)
       if (p.setCount) { const s = document.getElementById('setup-sets'); if (s) s.value = String(p.setCount) }
-      // Alias banner
-      const banner = document.getElementById('alias-banner')
-      const text = document.getElementById('alias-text')
-      if (banner && text) {
-        if (aliasVal) { text.textContent = aliasVal; banner.classList.remove('hidden') } else { text.textContent = ''; banner.classList.add('hidden') }
-      }
+      // alias removed — no pseudo input to populate
       statusEl.textContent = 'Ready'
     } else { statusEl.textContent = 'Sign in to load profile.' }
   } catch { statusEl.textContent = 'Failed to load profile.' }
@@ -270,13 +302,12 @@ document.getElementById('btn-save')?.addEventListener('click', async () => {
   // Show splash/loading immediately upon Save
   showLoading('Saving…')
   try {
-    const { setUserSetup, setUserDuree, setUserDureePost, setUserEquipment, setUserAlias, generateHiit, triggerRegenerate } = await import('./backend.js')
-    await setUserSetup(email, { programType: program, selectedType: session, setCount: sets, durationMin: duration })
+  const { setUserSetup, setUserDuree, setUserDureePost, setUserEquipment, generateHiit, triggerRegenerate } = await import('./backend.js')
+  await setUserSetup(email, { programType: program, selectedType: session, setCount: sets, durationMin: duration })
     // Extra reliability: push Durée alone as a fallback
     try { await setUserDuree(email, duration) } catch {}
     await setUserEquipment(email, equipment)
-    // Record email into profile (alias as email for now)
-    try { await setUserAlias(email, email) } catch {}
+    // Record email into profile (alias removed)
     try { localStorage.setItem('fitbook_program_type', program) } catch {}
     try { if (String(program).toLowerCase().includes('hiit')) localStorage.setItem('fitbook_hiit_minutes', String(duration)) } catch {}
     // Trigger generation and navigate to Workout with overlay
@@ -315,32 +346,9 @@ document.getElementById('btn-save')?.addEventListener('click', async () => {
 })
 
 // Save alias
-document.getElementById('setup-save-alias')?.addEventListener('click', async () => {
-  const email = document.getElementById('user-email')?.textContent || ''
-  const statusEl = document.getElementById('setup-status')
-  const alias = document.getElementById('setup-alias')?.value || ''
-  if (!email) { statusEl.textContent = 'Sign in first.'; return }
-  try {
-    const { setUserAlias } = await import('./backend.js')
-    const res = await setUserAlias(email, alias)
-    statusEl.textContent = (res && res.status === 'ok') ? 'Alias saved.' : 'Alias save failed.'
-    const banner = document.getElementById('alias-banner')
-    const text = document.getElementById('alias-text')
-    if (banner && text) {
-      if (alias) { text.textContent = alias; banner.classList.remove('hidden') } else { text.textContent = ''; banner.classList.add('hidden') }
-    }
-  } catch { statusEl.textContent = 'Save failed.' }
-})
+// alias UI/handlers removed (pseudo removed)
 
-// Alias edit button in banner
-document.getElementById('alias-edit')?.addEventListener('click', () => {
-  show('setup')
-  setTimeout(() => {
-    const row = document.querySelector('#profile-card .alias-row')
-    if (row) row.classList.remove('hidden')
-    document.getElementById('setup-alias')?.focus()
-  }, 50)
-})
+// alias edit removed
 
 // Old generate button removed in favor of Save & Generate → Workout
 
@@ -360,6 +368,8 @@ document.getElementById('setup-equip-group')?.addEventListener('click', (ev) => 
     return false
   }
 }, true)
+
+// Inline nav used; no sidebar/hamburger behavior required
 
 document.getElementById('nav-workouts')?.addEventListener('click', () => {
   show('workouts')
@@ -398,59 +408,7 @@ document.getElementById('btn-mode-hiit')?.addEventListener('click', () => {
   if (window.fitbookLoadHiit) window.fitbookLoadHiit()
 })
 
-document.getElementById('nav-settings')?.addEventListener('click', () => {
-  show('settings')
-  // Populate form from overrides or defaults
-  document.getElementById('cfg-exec-url').value = readOverride('fitbook_exec_url') || 'https://script.google.com/macros/s/AKfycbzVxQkTF811m77pO-4GlADGp_O-1KscdD23kaDFbZqYaD21-uR16LCSxeutJq8Ga3Mqfg/exec'
-  document.getElementById('cfg-token').value = readOverride('fitbook_token') || 'TEMP_CREATE_SETS_TOKEN_20260101'
-  document.getElementById('cfg-proxy').value = readOverride('fitbook_proxy_base') || 'https://dawn-dream-8eb0.mathieuvalotaire.workers.dev/'
-})
-
-document.getElementById('cfg-save')?.addEventListener('click', () => {
-  const execUrl = document.getElementById('cfg-exec-url').value || ''
-  const token = document.getElementById('cfg-token').value || ''
-  const proxy = document.getElementById('cfg-proxy').value || ''
-  try {
-    localStorage.setItem('fitbook_exec_url', execUrl)
-    localStorage.setItem('fitbook_token', token)
-    localStorage.setItem('fitbook_proxy_base', proxy)
-    toast('Settings saved')
-    document.getElementById('settings-status').textContent = 'Saved.'
-  } catch { toast('Failed to save settings') }
-})
-
-document.getElementById('cfg-reset')?.addEventListener('click', () => {
-  try {
-    localStorage.removeItem('fitbook_exec_url')
-    localStorage.removeItem('fitbook_token')
-    localStorage.removeItem('fitbook_proxy_base')
-    toast('Settings reset to defaults')
-    document.getElementById('settings-status').textContent = 'Reset to defaults.'
-  } catch {}
-})
-
-// Test backend connectivity via proxy using current or remembered email
-import { testBackend } from './backend.js'
-document.getElementById('cfg-test')?.addEventListener('click', async () => {
-  const statusEl = document.getElementById('settings-status')
-  const emailText = document.getElementById('user-email')?.textContent || ''
-  const remembered = readOverride('fitbook_user_email')
-  const email = (emailText && emailText.includes('@')) ? emailText : (remembered || '')
-  statusEl.textContent = 'Testing…'
-  try {
-    const res = await testBackend(email)
-    if (res.ok) {
-      statusEl.textContent = `OK (${res.status}). Preview: ${res.preview}`
-      toast('Backend OK')
-    } else {
-      statusEl.textContent = `Error: ${res.error || res.status}`
-      toast('Backend error')
-    }
-  } catch (e) {
-    statusEl.textContent = 'Test failed.'
-    toast('Test failed')
-  }
-})
+// Settings UI removed from inline pages; settings remain manageable via admin-only bookmarklet or external admin route.
 
 // Restore last view on load
 try {
