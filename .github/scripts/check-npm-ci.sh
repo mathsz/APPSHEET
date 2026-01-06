@@ -17,6 +17,12 @@ for f in .github/workflows/*.yml .github/workflows/*.yaml; do
     if echo "$context" | grep -q "if \[ -f package.json \]"; then
       continue
     fi
+
+    # Also skip when a working-directory is set in the nearby context (e.g. "working-directory: pwa")
+    if echo "$context" | grep -q "working-directory:"; then
+      continue
+    fi
+
     echo "Found unguarded 'npm ci' in $f:$lineno -> $line"
     UNGUARDED=1
   done < <(nl -ba "$f" | sed -n '1,$p' | grep -nE "run:\s*npm ci(\s|$)")
