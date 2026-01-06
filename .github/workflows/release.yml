@@ -24,7 +24,13 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm ci && npm ci --prefix pwa
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "No root package.json - skipping root install"
+          fi
+          npm ci --prefix pwa
 
       - name: Run tests
         run: npm --prefix pwa test
