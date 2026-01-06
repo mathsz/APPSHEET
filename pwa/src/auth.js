@@ -319,6 +319,8 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
           <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="3"> Done</label> <select class="rest-select" data-set="3"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
         </div>
         <div class="set-actions">
+          <button class="btn-start-timer">Start</button>
+          <button class="btn-reset-timer">Reset</button>
           ${isIso ? `<button class="btn-timer" data-seconds="${secs}">Start ${secs}s</button><button class="btn-reset">Reset</button>` : ''}
         </div>
       </div>
@@ -337,6 +339,32 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
     if (target.closest('.card-list-item')) {
       window.fitbookDetailId = glideId
       renderWorkouts(items)
+      return
+    }
+
+    if (target.closest('.btn-start-timer') || target.closest('.btn-timer')) {
+      const btn = target.closest('.btn-start-timer') || target.closest('.btn-timer')
+      const cardEl = btn.closest('.card')
+      const tEl = cardEl ? cardEl.querySelector('.timer') : null
+      let secs = 60
+      const restSel = cardEl ? cardEl.querySelector('.rest-select') : null
+      if (btn && btn.dataset && btn.dataset.seconds) secs = parseInt(btn.dataset.seconds, 10) || secs
+      else if (restSel) secs = parseInt(restSel.value || secs, 10) || secs
+      try {
+        startCountdown(tEl, secs, () => { setStatus('Timer complete') })
+      } catch (e) { console.error('start timer error', e) }
+      return
+    }
+
+    if (target.closest('.btn-reset-timer') || target.closest('.btn-reset')) {
+      const btn = target.closest('.btn-reset-timer') || target.closest('.btn-reset')
+      const cardEl = btn ? btn.closest('.card') : null
+      try {
+        if (fitbookTimerInterval) { clearInterval(fitbookTimerInterval); fitbookTimerInterval = null }
+        const tEl = cardEl ? cardEl.querySelector('.timer') : null
+        if (tEl) { const mm = tEl.querySelector('.mm'); const ss = tEl.querySelector('.ss'); if (mm) mm.textContent = '00'; if (ss) ss.textContent = '00' }
+        setStatus('Timer reset')
+      } catch (e) { console.error('reset timer error', e) }
       return
     }
 
