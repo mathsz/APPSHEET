@@ -202,6 +202,29 @@ function renderWorkouts(items) {
     list.innerHTML = '<p>No workouts yet.</p>'
     return
   }
+}
+
+// Allow external modules (e.g., local generator) to render items via the same renderer
+try { window.renderWorkoutsFromGenerated = function(genItems) {
+  try {
+    const items = (Array.isArray(genItems) ? genItems : []).map(g => ({
+      id: g.id || (g.name ? ('gen_' + g.name.replace(/\s+/g,'_')) : ''),
+      exercise: g.name || g.exercise || '',
+      muscles: (Array.isArray(g.muscles) ? g.muscles.join(', ') : (g.muscles || '')),
+      equipment: (Array.isArray(g.equipment) ? g.equipment.join(', ') : (g.equipment || '')),
+      reps_text: g.cues || g.reps_text || '',
+      set1_reps: g.value && g.value.reps ? g.value.reps : '',
+      set1_load: g.value && g.value.load ? g.value.load : '',
+      set2_reps: g.set2_reps || '',
+      set2_load: g.set2_load || '',
+      set3_reps: g.set3_reps || '',
+      set3_load: g.set3_load || '',
+      video_url: g.video || g.video_url || '',
+      is_done: false
+    }))
+    renderWorkouts(items)
+  } catch (e) { console.error('renderWorkoutsFromGenerated error', e) }
+} } catch (e) {}
   const detailId = window.fitbookDetailId || null
   if (!detailId) {
     // Cards layout: render all exercises as expanded cards so sets/inputs are visible without clicking

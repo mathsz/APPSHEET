@@ -422,7 +422,11 @@ document.getElementById('btn-generate-local')?.addEventListener('click', async (
       video_url: it.video || ''
     }))
     // Use the app's renderer to display generated workouts with full interactions
-    if (window.renderWorkouts) {
+    if (window.renderWorkoutsFromGenerated) {
+      window.fitbookDetailId = null // ensure list/card mode
+      window.renderWorkoutsFromGenerated(mapped)
+      setStatus('Generated ' + mapped.length + ' exercises')
+    } else if (window.renderWorkouts) {
       window.fitbookDetailId = null // ensure list/card mode
       window.renderWorkouts(mapped)
       setStatus('Generated ' + mapped.length + ' exercises')
