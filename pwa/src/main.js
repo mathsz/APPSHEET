@@ -128,6 +128,7 @@ root.innerHTML = `
       <div class="set-actions" style="margin-bottom:0.5rem">
         <button id="btn-mode-strength">Strength</button>
         <button id="btn-mode-hiit">HIIT</button>
+        <button id="btn-generate-local">Generate Local</button>
       </div>
       <div id="workout-list" class="cards"></div>
       <div id="status" class="status"></div>
@@ -150,6 +151,22 @@ root.innerHTML = `
 `
 
 initAuth()
+
+// Register service worker for offline exercises.json caching and auto-refresh
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    console.log('SW registered', reg.scope)
+  }).catch(e => console.warn('SW register failed', e))
+  navigator.serviceWorker.addEventListener('message', (ev) => {
+    try {
+      if (ev.data && ev.data.type === 'exercises-updated') {
+        console.log('Exercises updated — reloading to use latest data')
+        // Auto-refresh page to pick up latest data
+        window.location.reload(true)
+      }
+    } catch (e) {}
+  })
+}
 
 // Settings view: visible only to two admin emails; hidden for everyone else
 ;(function(){
@@ -379,6 +396,35 @@ document.getElementById('nav-workouts')?.addEventListener('click', () => {
     if (window.autoLoadByProgram) {
       try { window.autoLoadByProgram(email) } catch {}
     }
+  }
+})
+
+// Dev: client-side generator integration for local testing
+document.getElementById('btn-generate-local')?.addEventListener('click', async () => {
+  setStatus('Loading exercises…')
+  try {
+    const res = await fetch('/exercises.json', { cache: 'no-store' })
+    if (!res.ok) throw new Error('fetch failed')
+    const j = await res.json()
+    const genMod = await import('./generator.js')
+    genMod.loadExercises(j)
+    const count = 5
+    const w = genMod.generateWorkout({count, constraints: {}})
+    const list = document.getElementById('workout-list')
+    list.innerHTML = w.map((it, idx) => `
+      <div class="card">
+        <div class="row">
+          <div class="col"><strong>${escapeHtml(it.name)}</strong><div class="muted">${escapeHtml(it.muscles.join(', '))}</div></div>
+        </div>
+        <div class="sets" style="margin-top:0.5rem">
+          <div>${it.mode === 'reps' ? (it.value && it.value.reps ? it.value.reps + ' reps' : '') : ''}</div>
+          <div class="muted small">${escapeHtml(it.cues || '')}</div>
+        </div>
+      </div>
+    `).join('')
+    setStatus('Generated ' + w.length + ' exercises')
+  } catch (e) {
+    setStatus('Generate failed')
   }
 })
 
