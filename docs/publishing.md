@@ -22,6 +22,21 @@ Notes:
 - `FIREBASE_TOKEN` — CI token from `firebase login:ci`.
 - `FIREBASE_PROJECT` — your firebase project id used for hosting.
 
+## Staging deploy
+We support a staging deploy that runs when you push to the `staging` branch. Use the following optional secrets for staging targets:
+- `FIREBASE_STAGING_TOKEN` and `FIREBASE_STAGING_PROJECT` — for staging Firebase deploys.
+- `GCP_SA_KEY_STAGING` and `CLASP_SCRIPT_ID_STAGING` — for staging Apps Script deploys.
+
+Staging deploys run in the `staging` environment (if you configure environment protection in GitHub you can require approvals before the job runs).
+
+## Security best practices
+- Least privilege: create a dedicated service account for CI with the minimum required permissions (Apps Script Editor or project-level editor where applicable) and rotate its key periodically.
+- Store secrets at the GitHub repository level using the repository _Secrets_ UI. Avoid copying secrets into logs; our workflow writes the service account key to a temporary file and removes it promptly.
+- Use separate credentials for staging and production. Never reuse production service account JSON for staging jobs.
+- Consider restricting Actions to run only on protected branches or with protected environments that require manual approval for production deploys.
+- Avoid embedding secrets in workflow files or in the source tree. Use `GITHUB_ENV`/environment files sparingly and delete temporary files created during the job.
+- To further reduce risk, consider configuring OpenID Connect (OIDC) where possible to avoid long-lived service account keys for supported providers.
+
 ## Manual deploy (local)
 1. Install clasp: `npm i -g @google/clasp`
 2. Save `sa-key.json` with your service account JSON.

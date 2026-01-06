@@ -54,6 +54,42 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: firebase deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT }} --token ${{ secrets.FIREBASE_TOKEN }}
 
+  # Staging deployment: triggered by pushes to `staging` branch. Uses separate staging secrets	
+  staging-deploy:
+    name: Staging Deploy (optional)
+    needs: test-build
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/staging' && (secrets.FIREBASE_STAGING_TOKEN != '' || (secrets.GCP_SA_KEY_STAGING != '' && secrets.CLASP_SCRIPT_ID_STAGING != '')) }}
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build PWA (staging)
+        run: npm --prefix pwa run build
+
+      - name: Optional: Deploy PWA to Firebase staging
+        if: ${{ secrets.FIREBASE_STAGING_TOKEN != '' && secrets.FIREBASE_STAGING_PROJECT != '' }}
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only hosting --project ${{ secrets.FIREBASE_STAGING_PROJECT }} --token ${{ secrets.FIREBASE_STAGING_TOKEN }}
+
+      - name: Optional: Deploy Apps Script to staging
+        if: ${{ secrets.GCP_SA_KEY_STAGING != '' && secrets.CLASP_SCRIPT_ID_STAGING != '' }}
+        run: |
+          npm install -g @google/clasp
+          echo "${{ secrets.GCP_SA_KEY_STAGING }}" > sa-key.json
+          echo "{\"scriptId\": \"${{ secrets.CLASP_SCRIPT_ID_STAGING }}\"}" > .clasp.json
+          npx clasp login --creds sa-key.json
+          npx clasp push --force
+          npx clasp version "Staging deploy ${GITHUB_SHA}"
+          rm -f sa-key.json
+
   deploy-apps-script:
     name: Deploy Apps Script (optional)
     needs: test-build
