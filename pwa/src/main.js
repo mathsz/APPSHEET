@@ -410,20 +410,36 @@ document.getElementById('btn-generate-local')?.addEventListener('click', async (
     genMod.loadExercises(j)
     const count = 5
     const w = genMod.generateWorkout({count, constraints: {}})
-    const list = document.getElementById('workout-list')
-    list.innerHTML = w.map((it, idx) => `
-      <div class="card">
-        <div class="row">
-          <div class="col"><strong>${escapeHtml(it.name)}</strong><div class="muted">${escapeHtml(it.muscles.join(', '))}</div></div>
+    // Map generator items to the shape expected by renderWorkouts
+    const mapped = w.map(it => ({
+      id: it.id || ('gen_' + Math.random().toString(36).slice(2,9)),
+      exercise: it.name || it.exercise || '',
+      muscles: Array.isArray(it.muscles) ? it.muscles.join(', ') : (it.muscles || ''),
+      set1_reps: it.value && it.value.reps ? it.value.reps : '',
+      set1_load: it.value && it.value.load ? it.value.load : '',
+      set2_reps: '', set2_load: '', set3_reps: '', set3_load: '',
+      is_done: false,
+      video_url: it.video || ''
+    }))
+    // Use the app's renderer to display generated workouts with full interactions
+    if (window.renderWorkouts) {
+      window.fitbookDetailId = null // ensure list/card mode
+      window.renderWorkouts(mapped)
+      setStatus('Generated ' + mapped.length + ' exercises')
+    } else {
+      // Fallback: simple render
+      const list = document.getElementById('workout-list')
+      list.innerHTML = mapped.map((it, idx) => `
+        <div class="card">
+          <div class="row">
+            <div class="col"><strong>${escapeHtml(it.exercise)}</strong><div class="muted">${escapeHtml(it.muscles)}</div></div>
+          </div>
         </div>
-        <div class="sets" style="margin-top:0.5rem">
-          <div>${it.mode === 'reps' ? (it.value && it.value.reps ? it.value.reps + ' reps' : '') : ''}</div>
-          <div class="muted small">${escapeHtml(it.cues || '')}</div>
-        </div>
-      </div>
-    `).join('')
-    setStatus('Generated ' + w.length + ' exercises')
+      `).join('')
+      setStatus('Generated ' + mapped.length + ' exercises')
+    }
   } catch (e) {
+    console.error(e)
     setStatus('Generate failed')
   }
 })

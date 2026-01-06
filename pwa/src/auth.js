@@ -102,6 +102,8 @@ async function autoLoadByProgram(email) {
 
 // Expose for navigation auto-load
 try { window.autoLoadByProgram = autoLoadByProgram } catch {}
+// Expose renderWorkouts so external modules (dev/test) can invoke the UI renderer
+try { window.renderWorkouts = renderWorkouts } catch {}
 
 // Global timer utilities for both Strength and HIIT flows
 let fitbookTimerInterval = null
