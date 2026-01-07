@@ -45,4 +45,19 @@ describe('generator', () => {
     // bench equipment likely not in sample so returns empty or fewer
     expect(w.length).toBeLessThanOrEqual(10)
   })
+
+  it('generateWorkout uses local settings when no params provided', () => {
+    // ensure localStorage exists/clear
+    try { localStorage.removeItem('fitbook_sets'); localStorage.removeItem('fitbook_equipment') } catch {}
+    // set local sets
+    try { localStorage.setItem('fitbook_sets', '4') } catch {}
+    const w = generateWorkout()
+    expect(w.length).toBe(4)
+    // equipment constraint from local storage
+    try { localStorage.setItem('fitbook_equipment', 'kettlebell') } catch {}
+    const w2 = generateWorkout({ count: 3 })
+    // all returned exercises should include at least one requested equipment
+    expect(w2.length).toBeGreaterThanOrEqual(0)
+    if (w2.length) expect(w2.every(e => e.equipment.includes('kettlebell'))).toBe(true)
+  })
 })

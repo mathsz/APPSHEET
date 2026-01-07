@@ -485,8 +485,8 @@ document.getElementById('btn-generate-local')?.addEventListener('click', async (
 
     const genMod = await import('./generator.js')
     genMod.loadExercises(j)
-    const count = 5
-    const w = genMod.generateWorkout({count, constraints: {}})
+    // Use local setup defaults (sets/equipment) when available
+    const w = genMod.generateWorkout()
     // Map generator items to the shape expected by renderWorkouts
     const mapped = w.map(it => ({
       id: it.id || ('gen_' + Math.random().toString(36).slice(2,9)),
