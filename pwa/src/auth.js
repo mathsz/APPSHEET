@@ -70,6 +70,100 @@ async function flushPendingBatches() {
 // Try flush when online
 try { window.addEventListener && window.addEventListener('online', () => { setTimeout(flushPendingBatches, 1000) }) } catch (e) {}
 
+// Profile pending helpers
+const PENDING_PROFILE = 'fitbook_pending_profile'
+function loadPendingProfile() { try { return JSON.parse(localStorage.getItem(PENDING_PROFILE) || '{}') } catch { return {} } }
+function savePendingProfile(p) { try { localStorage.setItem(PENDING_PROFILE, JSON.stringify(p || {})) } catch {} }
+function clearPendingProfile() { try { localStorage.removeItem(PENDING_PROFILE) } catch {} }
+
+// Expose helper to save profile changes locally (queued)
+export function enqueueProfile(profile) {
+  try {
+    const p = loadPendingProfile() || {}
+    const t = { profile, createdAt: new Date().toISOString() }
+    // simple replace semantics - keep last update
+    savePendingProfile(t)
+    return true
+  } catch (e) { return false }
+}
+
+// Flush profile and batches with progress reporting
+export async function flushAllPending({ onProgress } = {}) {
+  // onProgress: (info) => {}
+  try {
+    // flush profile first
+    const pendingProfile = loadPendingProfile()
+    if (pendingProfile && pendingProfile.profile) {
+      try {
+        onProgress && onProgress({ step: 'profile', status: 'started' })
+        const prof = pendingProfile.profile || {}
+        // prefer setUserSetup (GET) for light updates; fallback to POST when robust data required
+        try {
+          await setUserSetup(localStorage.getItem('fitbook_user_email') || '', prof)
+        } catch (e) {
+          // fallback to POST
+          await setUserDureePost(localStorage.getItem('fitbook_user_email') || '', prof.durationMin || prof.minutes || '')
+        }
+        clearPendingProfile()
+        onProgress && onProgress({ step: 'profile', status: 'done' })
+      } catch (e) {
+        onProgress && onProgress({ step: 'profile', status: 'error', error: String(e) })
+        throw e
+      }
+    }
+
+    // then flush workout batches
+    onProgress && onProgress({ step: 'batches', status: 'started' })
+    const result = { success: 0, failed: 0 }
+    try {
+      const arr = JSON.parse(localStorage.getItem(PENDING_BATCHES) || '[]')
+      if (!Array.isArray(arr) || !arr.length) {
+        onProgress && onProgress({ step: 'batches', status: 'done', result })
+        return { profile: pendingProfile && pendingProfile.profile ? 'sent' : 'none', batches: result }
+      }
+      const total = arr.length
+      let idx = 0
+      const remaining = []
+      for (const b of arr) {
+        idx += 1
+        onProgress && onProgress({ step: 'batches', status: 'in-progress', index: idx, total })
+        try {
+          const ops = []
+          const email = b.email || ''
+          const pstore = loadPending() || {}
+          for (const item of b.items || []) {
+            const gid = item.glideId
+            try { const rep = pstore[gid] && pstore[gid].replacement; if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || '')) } catch (e) {}
+            for (const s of item.sets || []) {
+              ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
+              if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+            }
+            ops.push(setGlideWodState(gid, !!item.is_done, email))
+          }
+          await Promise.all(ops)
+          // clear pending per-id
+          try { const p = loadPending(); for (const it of b.items || []) delete p[it.glideId]; savePending(p) } catch(e){}
+          result.success += 1
+        } catch (e) {
+          remaining.push(b)
+          result.failed += 1
+        }
+        onProgress && onProgress({ step: 'batches', status: 'item-done', index: idx, total, result })
+      }
+      localStorage.setItem(PENDING_BATCHES, JSON.stringify(remaining))
+      onProgress && onProgress({ step: 'batches', status: 'done', result })
+      return { profile: pendingProfile && pendingProfile.profile ? 'sent' : 'none', batches: result }
+    } catch (e) {
+      onProgress && onProgress({ step: 'batches', status: 'error', error: String(e) })
+      throw e
+    }
+  } catch (e) { throw e }
+}
+
+// expose flush and enqueue helpers globally for UI modules
+try { window.enqueueProfile = enqueueProfile; window.flushAllPending = flushAllPending } catch (e) {}
+
+
 // Queue indicator helpers
 function getPendingBatchCount() {
   try { const arr = JSON.parse(localStorage.getItem(PENDING_BATCHES) || '[]'); return Array.isArray(arr) ? arr.length : 0 } catch { return 0 }
@@ -449,29 +543,38 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                 }
               })
               try {
+                // Always save locally first
+                enqueueBatch(batch)
                 if (!navigator.onLine) {
-                  enqueueBatch(batch)
                   setStatus('Offline — saved locally and queued for sync')
                 } else {
-                  const ops = []
-                  const p = loadPending() || {}
-                  for (const item of batch.items) {
-                    const gid = item.glideId
-                    // apply any local replacement if present
-                    try {
-                      const rep = p[gid] && p[gid].replacement
-                      if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || ''))
-                    } catch (e) { console.warn('failed to apply replacement for', gid, e) }
-
-                    for (const s of item.sets || []) {
-                      ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
-                      if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+                  setStatus('Syncing to server…')
+                  try {
+                    // Use unified flush with splash/progress when available
+                    if (window && typeof window.showCompleteAndFlush === 'function') {
+                      await window.showCompleteAndFlush()
+                      setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
+                    } else {
+                      // Fallback: perform immediate ops without splash
+                      const ops = []
+                      const p = loadPending() || {}
+                      for (const item of batch.items) {
+                        const gid = item.glideId
+                        try { const rep = p[gid] && p[gid].replacement; if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || '')) } catch (e) {}
+                        for (const s of item.sets || []) {
+                          ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
+                          if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+                        }
+                        ops.push(setGlideWodState(gid, item.is_done, email))
+                      }
+                      await Promise.all(ops)
+                      try { const p2 = loadPending(); for (const it of batch.items) delete p2[it.glideId]; savePending(p2) } catch (e) {}
+                      setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
                     }
-                    ops.push(setGlideWodState(gid, item.is_done, email))
+                  } catch (e) {
+                    console.error('Failed to flush after enqueue', e)
+                    setStatus('Sync failed — queued for retry')
                   }
-                  await Promise.all(ops)
-                  try { const p2 = loadPending(); for (const it of batch.items) delete p2[it.glideId]; savePending(p2) } catch (e) {}
-                  setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
                 }
               } catch (e) {
                 console.error('Failed batch save', e)
