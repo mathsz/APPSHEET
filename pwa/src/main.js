@@ -485,8 +485,8 @@ document.getElementById('btn-generate-local')?.addEventListener('click', async (
 
     const genMod = await import('./generator.js')
     genMod.loadExercises(j)
-    const count = 5
-    const w = genMod.generateWorkout({count, constraints: {}})
+    // Use local setup defaults (sets/equipment) when available
+    const w = genMod.generateWorkout()
     // Map generator items to the shape expected by renderWorkouts
     const mapped = w.map(it => ({
       id: it.id || ('gen_' + Math.random().toString(36).slice(2,9)),
@@ -615,6 +615,8 @@ try {
         try { localStorage.setItem('fitbook_duration_min', String(duration)) } catch {}
         try { localStorage.setItem('fitbook_sets', String(sets)) } catch {}
         try { localStorage.setItem('fitbook_equipment', equipment) } catch {}
+        // enqueue profile update locally for later flush
+        try { window.enqueueProfile({ programType: program, selectedType: selectedType, setCount: sets, durationMin: duration, equipment }) } catch (e) { console.warn('enqueueProfile failed', e) }
         // generate using cached exercises.json
         let j
         try { const res = await fetch('/exercises.json', { cache: 'no-store' }); if (res && res.ok) j = await res.json(); else throw new Error('fetch failed') } catch (e) { const cached = await caches.match('/exercises.json'); if (cached) j = await cached.json(); else throw e }
@@ -631,9 +633,91 @@ try {
         }
         statusEl.textContent = 'Generated locally. Press "Workout complete" to save to Sheets.'
         show('workouts')
+        // ensure the complete flow button triggers the local enqueue + flush+ splash
+        try {
+          const btnC = document.getElementById('btn-workout-complete')
+          if (btnC) {
+            btnC.onclick = async () => {
+              try {
+                // Build the batch from current UI (reuse existing handler) by triggering click on complete button logic in auth.js
+                try { document.querySelector('#btn-workout-complete')?.click() } catch {}
+                // But we changed the auth handler to enqueue batch always; now show splash and flush
+                await window.showCompleteAndFlush()
+              } catch (e) { console.error('Complete flow failed', e) }
+            }
+          }
+        } catch (e) {}
+
       } catch (e) { console.error('Local generate failed', e); statusEl.textContent = 'Generate failed — see console.' }
       try { window.hideLoading && window.hideLoading() } catch {}
     }
   }
 } catch (e) {}
+
+// Ensure complete modal exists and provide a helper to show it and flush pending items
+try {
+  function ensureCompleteModal() {
+    if (document.getElementById('complete-modal')) return
+    const html = `
+      <div id="complete-modal" class="hidden">
+        <div class="card">
+          <div id="lottie-wrap" style="width:360px; height:360px; margin:0 auto"></div>
+          <div class="progress" id="complete-progress">Preparing to sync…</div>
+          <div class="progress-bar"><div class="fill" id="complete-fill"></div></div>
+          <button id="complete-close" class="close hidden">Close</button>
+        </div>
+      </div>`
+    document.body.insertAdjacentHTML('beforeend', html)
+    const close = document.getElementById('complete-close')
+    if (close) close.addEventListener('click', () => { try { document.getElementById('complete-modal').classList.add('hidden'); window._completeAnim && window._completeAnim.stop() } catch {} })
+  }
+
+  window.showCompleteAndFlush = async function() {
+    try {
+      ensureCompleteModal()
+      const modal = document.getElementById('complete-modal')
+      const wrap = document.getElementById('lottie-wrap')
+      const txt = document.getElementById('complete-progress')
+      const fill = document.getElementById('complete-fill')
+      const close = document.getElementById('complete-close')
+      if (!modal || !wrap || !txt || !fill) return
+      modal.classList.remove('hidden')
+      txt.textContent = 'Starting…'
+      fill.style.width = '0%'
+      close.classList.add('hidden')
+      try { window._completeAnim && window._completeAnim.destroy() } catch {}
+      try {
+        if (window.lottie && window.COMPLETE_LOTTIE_URL) {
+          window._completeAnim = window.lottie.loadAnimation({ container: wrap, renderer: 'svg', loop: true, autoplay: true, path: window.COMPLETE_LOTTIE_URL })
+        }
+      } catch (e) { console.warn('lottie play failed', e) }
+
+      try {
+        const res = await window.flushAllPending({ onProgress: (info) => {
+          try {
+            if (info.step === 'profile') {
+              if (info.status === 'started') { txt.textContent = 'Syncing profile…' }
+              else if (info.status === 'done') { txt.textContent = 'Profile synced' }
+              else if (info.status === 'error') { txt.textContent = 'Profile error: ' + (info.error || '') }
+            } else if (info.step === 'batches') {
+              if (info.status === 'started') { txt.textContent = 'Syncing workouts…' }
+              else if (info.status === 'in-progress') { txt.textContent = `Syncing batch ${info.index} / ${info.total}`; fill.style.width = String(Math.round((info.index / info.total) * 100)) + '%' }
+              else if (info.status === 'item-done') { txt.textContent = `Batches progress: ${info.index}/${info.total}`; fill.style.width = String(Math.round((info.index / info.total) * 100)) + '%' }
+              else if (info.status === 'done') { txt.textContent = 'All batches synced' }
+              else if (info.status === 'error') { txt.textContent = 'Batch error: ' + (info.error || '') }
+            }
+          } catch (e) { console.warn('progress update failed', e) }
+        }})
+        txt.textContent = 'Sync complete — success: ' + (res.batches.success || 0) + ', failed: ' + (res.batches.failed || 0)
+        fill.style.width = '100%'
+      } catch (e) {
+        txt.textContent = 'Sync failed: ' + (e && e.message ? e.message : String(e))
+      } finally {
+        try { window._completeAnim && window._completeAnim.play() } catch {}
+        setTimeout(() => { try { document.getElementById('complete-close')?.classList.remove('hidden') } catch {} }, 500)
+      }
+
+    } catch (e) { console.error('showCompleteAndFlush failed', e) }
+  }
+} catch (e) { console.warn('complete modal init failed', e) }
 

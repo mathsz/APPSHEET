@@ -12,6 +12,12 @@
     <div id="app"></div>
     <script src="https://cdn.jsdelivr.net/npm/nosleep.js@0.12.0/dist/NoSleep.min.js"></script>
     <script type="module" src="/src/main.js?v=0.52a"></script>
+    <script type="module">
+      import lottie from '/node_modules/lottie-web/build/player/lottie.min.js'
+      window.lottie = lottie
+      // Preload a default fireworks/confetti animation (Lottie file URL)
+      window.COMPLETE_LOTTIE_URL = 'https://assets7.lottiefiles.com/packages/lf20_touohxv0.json'
+    </script>
     <script>
       // Register service worker only on non-local hosts to avoid dev caching issues.
       (function() {

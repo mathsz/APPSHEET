@@ -71,6 +71,16 @@ nav button { background: #111111; color: #ffffff; border: 1px solid #333333; pad
 
 .cards#setup-profile { display: block; }
 #profile-card { padding: 0.6rem; display: inline-block; }
+
+/* Workout Complete splash */
+#complete-modal { position: fixed; inset: 0; background: rgba(3,7,18,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+#complete-modal.hidden { display: none }
+#complete-modal .card { background: transparent; border: none; text-align: center; color: white }
+#complete-modal .progress { margin-top: 1rem; font-size: 1.1rem }
+#complete-modal .progress-bar { width: 300px; height: 12px; background: rgba(255,255,255,0.12); border-radius: 8px; margin: 10px auto }
+#complete-modal .progress-bar .fill { height: 100%; width: 0%; background: linear-gradient(90deg,#ff7a18,#af002d); border-radius: 8px; transition: width 300ms }
+#complete-modal .close { margin-top: 1rem; padding: 0.4rem 0.8rem; border-radius: 6px; background: white; color: #111; border: none }
+
 .alias-row { display: inline-flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
 .alias-row input { padding: 0.4rem 0.5rem; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; min-width: 160px; }
 .card { padding: 1rem; border-radius: 12px; background: #0b0b0b; border: 1px solid rgba(255,255,255,0.12); }
