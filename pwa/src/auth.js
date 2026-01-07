@@ -454,8 +454,15 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                   setStatus('Offline — saved locally and queued for sync')
                 } else {
                   const ops = []
+                  const p = loadPending() || {}
                   for (const item of batch.items) {
                     const gid = item.glideId
+                    // apply any local replacement if present
+                    try {
+                      const rep = p[gid] && p[gid].replacement
+                      if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || ''))
+                    } catch (e) { console.warn('failed to apply replacement for', gid, e) }
+
                     for (const s of item.sets || []) {
                       ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
                       if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
@@ -463,7 +470,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                     ops.push(setGlideWodState(gid, item.is_done, email))
                   }
                   await Promise.all(ops)
-                  try { const p = loadPending(); for (const it of batch.items) delete p[it.glideId]; savePending(p) } catch (e) {}
+                  try { const p2 = loadPending(); for (const it of batch.items) delete p2[it.glideId]; savePending(p2) } catch (e) {}
                   setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
                 }
               } catch (e) {
