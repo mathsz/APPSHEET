@@ -34,8 +34,18 @@ async function flushPendingBatches() {
       try {
         const ops = []
         const email = b.email || ''
+        // read per-id pending info (replacements, sets)
+        const pendingStore = loadPending() || {}
         for (const item of b.items || []) {
           const gid = item.glideId
+          // If there's a local replacement saved for this glide row, apply it first (best-effort)
+          try {
+            const rep = pendingStore[gid] && pendingStore[gid].replacement
+            if (rep) {
+              ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || ''))
+            }
+          } catch (e) { console.warn('replacement push failed for', gid, e) }
+
           // sync sets
           for (const s of item.sets || []) {
             ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
@@ -540,19 +550,51 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       const btn = target.closest('.btn-replace')
       const equipment = btn.getAttribute('data-equip') || ''
       const muscle = btn.getAttribute('data-muscle') || ''
-      setStatus('Replacing…')
+      setStatus('Replacing (local)…')
       try {
-        const res = await replaceGlideExercise(glideId, equipment, muscle)
-        if (res && res.status === 'ok') {
-          setStatus('Replaced. Refreshing…')
-          if (email) {
-            // Refresh workouts but keep current view (do not force detail mode)
-            await loadWorkouts(email)
-          }
-        } else {
-          setStatus('Replace failed')
+        // Prefer local replacement: pick a replacement exercise from the in-browser generator
+        const genMod = await import('./generator.js')
+        const ex = genMod.pickRandomExercise({ excludeIds: [], equipment: equipment || null, muscle: muscle || null })
+        if (!ex) {
+          setStatus('No replacement found locally')
+          return
         }
-      } catch (e) { setStatus('Network error') }
+        // Update DOM: title, muscles, video link, data attributes
+        try {
+          const strong = card.querySelector('strong')
+          if (strong) {
+            // preserve done-dot if present
+            const hasDot = !!strong.querySelector('.done-dot')
+            strong.innerHTML = `${hasDot ? '<span class="done-dot done"></span>' : ''}${escapeHtml(ex.name || '')}`
+          }
+          const muted = card.querySelector('.muted')
+          if (muted) muted.textContent = ex.muscles ? (Array.isArray(ex.muscles) ? ex.muscles.join(', ') : ex.muscles) : ''
+          btn.setAttribute('data-equip', Array.isArray(ex.equipment) ? ex.equipment.join(', ') : (ex.equipment || ''))
+          btn.setAttribute('data-muscle', Array.isArray(ex.muscles) ? ex.muscles.join(', ') : (ex.muscles || ''))
+          // update video link if present
+          try {
+            const link = card.querySelector('a')
+            if (link) {
+              if (ex.video) { link.href = ex.video; link.classList.remove('hidden') }
+              else { link.remove() }
+            } else if (ex.video) {
+              const col = card.querySelector('.col')
+              if (col) col.insertAdjacentHTML('beforeend', `<div class="muted"><a href="${escapeAttr(ex.video)}" target="_blank">YouTube</a></div>`)
+            }
+          } catch(e){}
+        } catch(e){ console.warn('DOM update for swap failed', e) }
+
+        // Persist replacement in pending store so it will be applied when batches are flushed
+        try {
+          const p = loadPending() || {}
+          if (!p[glideId]) p[glideId] = { glideId, is_done: false, sets: [] }
+          p[glideId].replacement = { name: ex.name || '', equipment: Array.isArray(ex.equipment) ? ex.equipment.join(', ') : (ex.equipment || ''), muscles: Array.isArray(ex.muscles) ? ex.muscles.join(', ') : (ex.muscles || ''), video: ex.video || '' }
+          savePending(p)
+          try { updateQueueIndicator() } catch (e) {}
+        } catch(e) { console.warn('failed to save replacement locally', e) }
+
+        setStatus('Replaced (local)')
+      } catch (e) { console.error('Local replace error', e); setStatus('Replace failed') }
       return
     }
 
