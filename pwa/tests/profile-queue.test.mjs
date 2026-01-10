@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { enqueueProfile, flushAllPending } from '../src/auth.js'
 import * as backend from '../src/backend.js'
+import { removeSetting, getSetting } from '../src/settings.js'
 
 beforeEach(() => {
-  try { localStorage.removeItem('fitbook_pending_profile') } catch {}
+  try { removeSetting('pending_profile') } catch {}
 })
 
 describe('profile queue', () => {
@@ -11,7 +12,7 @@ describe('profile queue', () => {
     const prof = { programType: 'Strength', durationMin: 30 }
     const ok = enqueueProfile(prof)
     expect(ok).toBe(true)
-    const raw = localStorage.getItem('fitbook_pending_profile')
+    const raw = getSetting('pending_profile')
     expect(raw).toBeTruthy()
     const parsed = JSON.parse(raw)
     expect(parsed.profile).toBeDefined()
@@ -25,7 +26,7 @@ describe('profile queue', () => {
     const spy = vi.spyOn(backend, 'setUserSetup').mockImplementation(async () => ({ status: 'ok' }))
     const res = await flushAllPending({ onProgress: () => {} })
     expect(spy).toHaveBeenCalled()
-    const raw = localStorage.getItem('fitbook_pending_profile')
+    const raw = getSetting('pending_profile')
     expect(raw === null || raw === '{}' || raw === 'null').toBeTruthy()
     spy.mockRestore()
   })
@@ -34,7 +35,9 @@ describe('profile queue', () => {
     const prof = { programType: 'Strength', durationMin: 30 }
     enqueueProfile(prof)
     const spy = vi.spyOn(backend, 'setUserSetup').mockImplementation(async () => { throw new Error('boom') })
-    await expect(flushAllPending({ onProgress: () => {} })).rejects.toThrow('boom')
+    const spy2 = vi.spyOn(backend, 'setUserDureePost').mockImplementation(async () => { throw new Error('boom2') })
+    await expect(flushAllPending({ onProgress: () => {} })).rejects.toThrow()
     spy.mockRestore()
+    spy2.mockRestore()
   })
 })

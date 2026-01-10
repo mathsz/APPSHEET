@@ -1,4 +1,4 @@
-# Fitbook PWA
+# Homeworkouts PWA
 
 Minimal offline-ready web app with Firebase Auth and Apps Script backend.
 

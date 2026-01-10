@@ -14,3 +14,7 @@ APP_SHEET_CHANGE_PLAN.md
 appsheet_column_mapping.csv
 
 # clasp config is ok to track; keep .clasp.json
+
+# Dependencies / OS junk
+node_modules/
+.DS_Store

@@ -1,11 +1,39 @@
+    // DEBUG: Log merged is_done state for each round
+    try {
+      const byRoundDebug = {}
+      items.forEach(it => {
+        const r = parseInt(it.round||1,10)
+        if (!byRoundDebug[r]) byRoundDebug[r] = []
+        byRoundDebug[r].push({id: it.id, is_done: it.is_done})
+      })
+      console.log('HIIT ROUNDS merged is_done states:', byRoundDebug)
+    } catch {}
+  // DEBUG: Log is_done state of all items after render
+  try {
+    console.log('HIIT ROUNDS is_done states:', items.map(it => ({round: it.round, is_done: it.is_done})))
+  } catch {}
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
-import { FITBOOK_CONFIG } from './config.js'
-import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, completeGlideWod, setGlideWodState, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone } from './backend.js'
+import { HOMEWORKOUTS_CONFIG } from './config.js'
+import { getGlideWodSummary, replaceGlideExercise, syncSetToGlide, setDone, completeGlideWod, setGlideWodState, getGlideHiitSummary, generateHiit, debugProfile, setHiitRoundDone, setHiitIsDone, setUserSetup, setUserDureePost } from './backend.js'
+import { getSetting, setSetting, removeSetting, getSettingInt, getSettingString } from './settings.js'
+import { appendWorkoutHistory, computeMuscleFatigueMap, loadHistory, makeHistorySummaryBlock, normalizeMuscleKeyTitle } from './fatigue.js'
+import { getCachedResponse } from './fetch-utils.js'
+
+// Ensure localStorage exists in non-browser test environments
+if (typeof globalThis.localStorage === 'undefined' || globalThis.localStorage === null) {
+  const _store = {}
+  globalThis.localStorage = {
+    getItem: (k) => (Object.prototype.hasOwnProperty.call(_store, k) ? _store[k] : null),
+    setItem: (k, v) => { _store[k] = String(v) },
+    removeItem: (k) => { delete _store[k] },
+    clear: () => { for (const k in _store) delete _store[k] }
+  }
+}
 
 // Local pending store helpers: store per-workout and queued batches
-const PENDING_KEY = 'fitbook_pending_workout'
-const PENDING_BATCHES = 'fitbook_pending_batches'
+const PENDING_KEY = 'homeworkouts_pending_workout'
+const PENDING_BATCHES = 'homeworkouts_pending_batches'
 
 function loadPending() {
   try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}') } catch { return {} }
@@ -49,7 +77,7 @@ async function flushPendingBatches() {
           // sync sets
           for (const s of item.sets || []) {
             ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
-            ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+            if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
           }
           // set row Is_Done
           ops.push(setGlideWodState(gid, !!item.is_done, email))
@@ -70,11 +98,11 @@ async function flushPendingBatches() {
 // Try flush when online
 try { window.addEventListener && window.addEventListener('online', () => { setTimeout(flushPendingBatches, 1000) }) } catch (e) {}
 
-// Profile pending helpers
-const PENDING_PROFILE = 'fitbook_pending_profile'
-function loadPendingProfile() { try { return JSON.parse(localStorage.getItem(PENDING_PROFILE) || '{}') } catch { return {} } }
-function savePendingProfile(p) { try { localStorage.setItem(PENDING_PROFILE, JSON.stringify(p || {})) } catch {} }
-function clearPendingProfile() { try { localStorage.removeItem(PENDING_PROFILE) } catch {} }
+// Profile pending helpers (use centralized settings helper)
+const PENDING_PROFILE = 'homeworkouts_pending_profile'
+function loadPendingProfile() { try { const raw = getSetting('pending_profile'); return raw ? JSON.parse(raw) : {} } catch { return {} } }
+function savePendingProfile(p) { try { const raw = JSON.stringify(p || {}); setSetting('pending_profile', raw); } catch {} }
+function clearPendingProfile() { try { removeSetting('pending_profile') } catch {} }
 
 // Expose helper to save profile changes locally (queued)
 export function enqueueProfile(profile) {
@@ -99,10 +127,10 @@ export async function flushAllPending({ onProgress } = {}) {
         const prof = pendingProfile.profile || {}
         // prefer setUserSetup (GET) for light updates; fallback to POST when robust data required
         try {
-          await setUserSetup(localStorage.getItem('fitbook_user_email') || '', prof)
+          await setUserSetup(localStorage.getItem('homeworkouts_user_email') || '', prof)
         } catch (e) {
           // fallback to POST
-          await setUserDureePost(localStorage.getItem('fitbook_user_email') || '', prof.durationMin || prof.minutes || '')
+          await setUserDureePost(localStorage.getItem('homeworkouts_user_email') || '', prof.durationMin || prof.minutes || '')
         }
         clearPendingProfile()
         onProgress && onProgress({ step: 'profile', status: 'done' })
@@ -122,35 +150,56 @@ export async function flushAllPending({ onProgress } = {}) {
         return { profile: pendingProfile && pendingProfile.profile ? 'sent' : 'none', batches: result }
       }
       const total = arr.length
-      let idx = 0
       const remaining = []
-      for (const b of arr) {
-        idx += 1
-        onProgress && onProgress({ step: 'batches', status: 'in-progress', index: idx, total })
+
+      const withTimeout = async (p, ms, label) => {
+        let t
+        const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(label + ' timed out')), ms) })
         try {
+          return await Promise.race([p, timeout])
+        } finally {
+          try { clearTimeout(t) } catch {}
+        }
+      }
+
+      for (let i = 0; i < arr.length; i++) {
+        const b = arr[i]
+        try {
+          onProgress && onProgress({ step: 'batches', status: 'in-progress', index: i + 1, total })
           const ops = []
-          const email = b.email || ''
-          const pstore = loadPending() || {}
+          const email = b.email || (localStorage.getItem('homeworkouts_user_email') || '')
+          const pendingStore = loadPending() || {}
           for (const item of b.items || []) {
             const gid = item.glideId
-            try { const rep = pstore[gid] && pstore[gid].replacement; if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || '')) } catch (e) {}
+            if (!gid) continue
+            // Apply replacement first (best-effort)
+            try {
+              const rep = pendingStore[gid] && pendingStore[gid].replacement
+              if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || ''))
+            } catch {}
+
             for (const s of item.sets || []) {
               ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
               if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
             }
             ops.push(setGlideWodState(gid, !!item.is_done, email))
           }
-          await Promise.all(ops)
-          // clear pending per-id
-          try { const p = loadPending(); for (const it of b.items || []) delete p[it.glideId]; savePending(p) } catch(e){}
+
+          // Avoid a single hung network request trapping the whole UI forever.
+          await withTimeout(Promise.all(ops), 30000, 'Batch sync')
+
+          // On success, clear pending per-id data for items in this batch.
+          try { const p = loadPending(); for (const it of b.items || []) delete p[it.glideId]; savePending(p) } catch {}
           result.success += 1
+          onProgress && onProgress({ step: 'batches', status: 'item-done', index: i + 1, total })
         } catch (e) {
-          remaining.push(b)
           result.failed += 1
+          remaining.push(b)
         }
-        onProgress && onProgress({ step: 'batches', status: 'item-done', index: idx, total, result })
       }
+
       localStorage.setItem(PENDING_BATCHES, JSON.stringify(remaining))
+      try { updateQueueIndicator() } catch {}
       onProgress && onProgress({ step: 'batches', status: 'done', result })
       return { profile: pendingProfile && pendingProfile.profile ? 'sent' : 'none', batches: result }
     } catch (e) {
@@ -212,8 +261,7 @@ function renderUser(user) {
     emailEl.textContent = user.email
     btnIn.classList.add('hidden')
     btnOut.classList.remove('hidden')
-    try { localStorage.setItem('fitbook_user_email', user.email) } catch {}
-    autoLoadByProgram(user.email)
+    try { localStorage.setItem('homeworkouts_user_email', user.email) } catch {}
   } else {
     emailEl.textContent = 'Not signed in'
     btnIn.classList.remove('hidden')
@@ -223,7 +271,7 @@ function renderUser(user) {
 }
 
 export function initAuth() {
-  app = initializeApp(FITBOOK_CONFIG.firebase)
+  app = initializeApp(HOMEWORKOUTS_CONFIG.firebase)
   auth = getAuth(app)
   const provider = new GoogleAuthProvider()
 
@@ -247,11 +295,11 @@ export function initAuth() {
   })
 
   // Expose loaders for Workout mode toggles
-  window.fitbookLoadStrength = () => {
+  window.homeworkoutsLoadStrength = () => {
     const email = document.getElementById('user-email')?.textContent || ''
     if (email) loadWorkouts(email)
   }
-  window.fitbookLoadHiit = () => {
+  window.homeworkoutsLoadHiit = () => {
     const email = document.getElementById('user-email')?.textContent || ''
     if (email) loadHiitWorkouts(email)
   }
@@ -260,31 +308,32 @@ export function initAuth() {
 async function autoLoadByProgram(email) {
   setStatus('Loading profile…')
   try {
-    const localProg = (() => { try { return localStorage.getItem('fitbook_program_type') || '' } catch { return '' } })()
+    const localProg = (() => { try { return getSettingString('program_type', '') } catch { return '' } })()
     const prof = await debugProfile(email)
     const program = String(localProg || prof?.profile?.programType || '').toLowerCase()
+    const selectedType = String(prof?.profile?.selectedType || '').toLowerCase()
+    const isPilates = program.includes('pilates') || selectedType.includes('pilates')
+    if (isPilates) {
+      setStatus('Program: Pilates')
+      try { window.showLoading && window.showLoading('Loading…') } catch {}
+      await loadWorkouts(email)
+      try { window.hideLoading && window.hideLoading() } catch {}
+      return
+    }
     if (program.includes('hiit') || program.includes('tabata')) {
       setStatus('Program: HIIT')
-      document.getElementById('btn-mode-hiit')?.classList.add('active')
-      document.getElementById('btn-mode-strength')?.classList.remove('active')
-      document.getElementById('btn-mode-strength')?.classList.add('hidden')
-      document.getElementById('btn-mode-hiit')?.classList.remove('hidden')
       try { window.showLoading && window.showLoading('Loading…') } catch {}
       await loadHiitWorkouts(email)
       try { window.hideLoading && window.hideLoading() } catch {}
     } else {
       setStatus('Program: Strength')
-      document.getElementById('btn-mode-strength')?.classList.add('active')
-      document.getElementById('btn-mode-hiit')?.classList.remove('active')
-      document.getElementById('btn-mode-hiit')?.classList.add('hidden')
-      document.getElementById('btn-mode-strength')?.classList.remove('hidden')
       try { window.showLoading && window.showLoading('Loading…') } catch {}
       await loadWorkouts(email)
       try { window.hideLoading && window.hideLoading() } catch {}
     }
   } catch {
     // Fallback to strength
-    const localProg = (() => { try { return localStorage.getItem('fitbook_program_type') || '' } catch { return '' } })()
+    const localProg = (() => { try { return getSettingString('program_type', '') } catch { return '' } })()
     if (String(localProg).toLowerCase().includes('hiit')) {
       await loadHiitWorkouts(email)
     } else {
@@ -298,9 +347,43 @@ try { window.autoLoadByProgram = autoLoadByProgram } catch {}
 // Expose renderWorkouts so external modules (dev/test) can invoke the UI renderer
 try { window.renderWorkouts = renderWorkouts } catch {}
 
+// Allow external modules (e.g., local generator) to render items via the same renderer.
+// Must exist before any non-empty Strength load so Setup generation is consistent.
+try {
+  window.renderWorkoutsFromGenerated = function renderWorkoutsFromGenerated(genItems) {
+    try {
+      const items = (Array.isArray(genItems) ? genItems : []).map(g => {
+        const setCount = clampInt(g?.setCount ?? g?.set_count ?? (Array.isArray(g?.sets) ? g.sets.length : null), 1, 50, getDefaultSetCount())
+        const mapped = {
+          id: g?.id || (g?.name ? ('gen_' + String(g.name).replace(/\s+/g, '_')) : ''),
+          exercise: g?.name || g?.exercise || '',
+          muscles: (Array.isArray(g?.muscles) ? g.muscles.join(', ') : (g?.muscles || '')),
+          equipment: (Array.isArray(g?.equipment) ? g.equipment.join(', ') : (g?.equipment || '')),
+          reps_text: g?.cues || g?.reps_text || '',
+          fatigue_str: g?.fatigueStr || g?.fatigue_str || '',
+          setCount,
+          set1_reps: (g?.value && g.value.reps != null) ? g.value.reps : (g?.set1_reps || ''),
+          set1_load: (g?.value && g.value.load != null) ? g.value.load : (g?.set1_load || ''),
+          video_url: g?.video || g?.video_url || '',
+          is_done: false
+        }
+        for (let s = 2; s <= setCount; s++) {
+          mapped[`set${s}_reps`] = g?.[`set${s}_reps`] ?? ''
+          mapped[`set${s}_load`] = g?.[`set${s}_load`] ?? ''
+        }
+        return mapped
+      })
+      try { window.homeworkoutsDetailId = null } catch {}
+      renderWorkouts(items)
+    } catch (e) {
+      console.error('renderWorkoutsFromGenerated error', e)
+    }
+  }
+} catch (e) {}
+
 // Global timer utilities for both Strength and HIIT flows
-let fitbookTimerInterval = null
-let fitbookTimerState = { tEl: null, remaining: 0, initial: 0, paused: false, onComplete: null }
+let homeworkoutsTimerInterval = null
+let homeworkoutsTimerState = { tEl: null, remaining: 0, initial: 0, paused: false, onComplete: null }
 function beep3() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext
@@ -336,17 +419,17 @@ function startCountdown(tEl, secs, onComplete) {
     if (ss) ss.textContent = String(s).padStart(2,'0')
   }
   update()
-  if (fitbookTimerInterval) clearInterval(fitbookTimerInterval)
-  fitbookTimerState = { tEl, remaining, initial: remaining, paused: false, onComplete }
-  fitbookTimerInterval = setInterval(() => {
+  if (homeworkoutsTimerInterval) clearInterval(homeworkoutsTimerInterval)
+  homeworkoutsTimerState = { tEl, remaining, initial: remaining, paused: false, onComplete }
+  homeworkoutsTimerInterval = setInterval(() => {
     remaining -= 1
-    fitbookTimerState.remaining = remaining
+    homeworkoutsTimerState.remaining = remaining
     if (remaining <= 0) {
       remaining = 0
       update()
-      clearInterval(fitbookTimerInterval)
-      fitbookTimerInterval = null
-      fitbookTimerState.paused = false
+      clearInterval(homeworkoutsTimerInterval)
+      homeworkoutsTimerInterval = null
+      homeworkoutsTimerState.paused = false
       beep3()
       setStatus('Timer complete')
       if (typeof onComplete === 'function') {
@@ -367,24 +450,70 @@ function parseBool(v) {
   }
 }
 
+function clampInt(v, min, max, fallback) {
+  const n = parseInt(String(v ?? ''), 10)
+  if (isNaN(n)) return fallback
+  return Math.max(min, Math.min(max, n))
+}
+
+function getDefaultSetCount() {
+  try {
+    const n = parseInt(localStorage.getItem('homeworkouts_sets') || '', 10)
+    if (!isNaN(n) && n > 0) return n
+  } catch {}
+  return 3
+}
+
+function getHiitLocalMinutes() {
+  // Prefer the saved Setup object when present.
+  try {
+    const stored = JSON.parse(localStorage.getItem('homeworkouts_setup_temp') || 'null')
+    const prog = String(stored?.programType || '').toLowerCase()
+    if (prog.includes('hiit') && stored?.durationMin != null) {
+      const n = parseInt(String(stored.durationMin), 10)
+      return isNaN(n) ? null : n
+    }
+  } catch {}
+  // Fallback to migrated settings + legacy local keys.
+  try {
+    const n = getSettingInt('duration_min', null)
+    if (n != null) return n
+  } catch {}
+  try {
+    const raw = localStorage.getItem('homeworkouts_duration_min') || localStorage.getItem('homeworkouts_hiit_minutes')
+    const n = raw ? parseInt(raw, 10) : NaN
+    return isNaN(n) ? null : n
+  } catch {}
+  return null
+}
+
+function getHiitLocalWorkRest() {
+  const work = getSettingInt('hiit_work_s', 40)
+  const rest = getSettingInt('hiit_rest_s', 20)
+  return {
+    work: clampInt(work, 5, 600, 40),
+    rest: clampInt(rest, 0, 600, 20)
+  }
+}
+
 function pauseTimer() {
-  if (fitbookTimerInterval) {
-    clearInterval(fitbookTimerInterval)
-    fitbookTimerInterval = null
-    fitbookTimerState.paused = true
+  if (homeworkoutsTimerInterval) {
+    clearInterval(homeworkoutsTimerInterval)
+    homeworkoutsTimerInterval = null
+    homeworkoutsTimerState.paused = true
     setStatus('Paused')
   }
 }
 function resumeTimer() {
-  if (fitbookTimerState.paused && fitbookTimerState.remaining > 0 && fitbookTimerState.tEl) {
+  if (homeworkoutsTimerState.paused && homeworkoutsTimerState.remaining > 0 && homeworkoutsTimerState.tEl) {
     setStatus('Resumed')
-    startCountdown(fitbookTimerState.tEl, fitbookTimerState.remaining, fitbookTimerState.onComplete)
+    startCountdown(homeworkoutsTimerState.tEl, homeworkoutsTimerState.remaining, homeworkoutsTimerState.onComplete)
   }
 }
 function rewindTimer(secs) {
-  if (fitbookTimerState.tEl) {
+  if (homeworkoutsTimerState.tEl) {
     setStatus('Rewound')
-    startCountdown(fitbookTimerState.tEl, parseInt(secs||fitbookTimerState.initial,10), fitbookTimerState.onComplete)
+    startCountdown(homeworkoutsTimerState.tEl, parseInt(secs||homeworkoutsTimerState.initial,10), homeworkoutsTimerState.onComplete)
   }
 }
 
@@ -396,40 +525,53 @@ function renderWorkouts(items) {
     return
   }
 
-// Allow external modules (e.g., local generator) to render items via the same renderer
-try { window.renderWorkoutsFromGenerated = function(genItems) {
-  try {
-    const items = (Array.isArray(genItems) ? genItems : []).map(g => ({
-      id: g.id || (g.name ? ('gen_' + g.name.replace(/\s+/g,'_')) : ''),
-      exercise: g.name || g.exercise || '',
-      muscles: (Array.isArray(g.muscles) ? g.muscles.join(', ') : (g.muscles || '')),
-      equipment: (Array.isArray(g.equipment) ? g.equipment.join(', ') : (g.equipment || '')),
-      reps_text: g.cues || g.reps_text || '',
-      set1_reps: g.value && g.value.reps ? g.value.reps : '',
-      set1_load: g.value && g.value.load ? g.value.load : '',
-      set2_reps: g.set2_reps || '',
-      set2_load: g.set2_load || '',
-      set3_reps: g.set3_reps || '',
-      set3_load: g.set3_load || '',
-      video_url: g.video || g.video_url || '',
-      is_done: false
-    }))
-    renderWorkouts(items)
-  } catch (e) { console.error('renderWorkoutsFromGenerated error', e) }
-} } catch (e) {}
-  const detailId = window.fitbookDetailId || null
+  const inferSetCount = (it) => {
+    const explicit = it.setCount ?? it.set_count ?? it.setsCount ?? it.sets_count
+    const byKey = clampInt(explicit, 1, 50, null)
+    if (byKey != null) return byKey
+    // Fallback: look for setN fields on the item
+    let maxSeen = 0
+    try {
+      for (const k of Object.keys(it || {})) {
+        const m = String(k).match(/^set(\d+)_/)
+        if (m) maxSeen = Math.max(maxSeen, parseInt(m[1], 10) || 0)
+      }
+    } catch {}
+    if (maxSeen > 0) return maxSeen
+    return getDefaultSetCount()
+  }
+
+  const renderSetRows = (it, setCount) => {
+    const rows = []
+    for (let s = 1; s <= setCount; s++) {
+      const repsKey = `set${s}_reps`
+      const loadKey = `set${s}_load`
+      const repsVal = (it && it[repsKey] != null) ? it[repsKey] : ''
+      const loadVal = (it && it[loadKey] != null) ? it[loadKey] : ''
+      rows.push(`
+          <div class="set-row">
+            <label>Set ${s}</label>
+            <input class="s${s}-reps" type="number" inputmode="numeric" placeholder="reps" value="${repsVal ?? ''}">
+            <input class="s${s}-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${loadVal ?? ''}">
+            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="${s}"> Done</label> <select class="rest-select" data-set="${s}"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
+          </div>`)
+    }
+    return rows.join('')
+  }
+  const detailId = window.homeworkoutsDetailId || null
   if (!detailId) {
     // Cards layout: render all exercises as expanded cards so sets/inputs are visible without clicking
     list.classList.remove('list-mode')
     list.innerHTML = items.map((it, idx) => {
       const id = it.id || ''
-      const isCurrent = (window.fitbookHiitCurrentId && window.fitbookHiitCurrentId === id)
+      const setCount = inferSetCount(it)
+      const isCurrent = (window.homeworkoutsHiitCurrentId && window.homeworkoutsHiitCurrentId === id)
       const isIso = (it.work_s != null) || String(it.reps_text || '').toLowerCase().includes('tenir') || String(it.exercise||'').toLowerCase().includes('plank')
       const secs = it.work_s != null ? parseInt(it.work_s, 10) : guessIsoSeconds(String(it.reps_text||''))
       const exLabel = `Exercice ${idx+1}`
       const doneDot = (it.is_done === true) ? `<span class="done-dot done"></span>` : `<span class="done-dot"></span>`
       return `
-        <div class="card ${isCurrent ? 'current-exercise' : ''} ${it.is_done ? 'done-exercise' : ''}" data-id="${id}">
+        <div class="card ${isCurrent ? 'current-exercise' : ''} ${it.is_done ? 'done-exercise' : ''}" data-id="${id}" data-set-count="${setCount}" data-exercise="${escapeAttr(it.exercise || '')}" data-muscle-group="${escapeAttr(it.muscles || '')}" data-fatigue-str="${escapeAttr(it.fatigue_str || '')}">
           <div class="row">
             <div class="col">
               <strong>${doneDot}${escapeHtml(it.exercise || '')}</strong>
@@ -443,24 +585,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
           </div>
         <div class="timer"><span class="mm">00</span>:<span class="ss">00</span></div>
         <div class="sets">
-          <div class="set-row">
-            <label>Set 1</label>
-            <input class="s1-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set1_reps ?? ''}">
-            <input class="s1-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set1_load ?? ''}">
-            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="1"> Done</label> <select class="rest-select" data-set="1"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
-          </div>
-          <div class="set-row">
-            <label>Set 2</label>
-            <input class="s2-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set2_reps ?? ''}">
-            <input class="s2-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set2_load ?? ''}">
-            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="2"> Done</label> <select class="rest-select" data-set="2"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
-          </div>
-          <div class="set-row">
-            <label>Set 3</label>
-            <input class="s3-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set3_reps ?? ''}">
-            <input class="s3-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set3_load ?? ''}">
-            <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="3"> Done</label> <select class="rest-select" data-set="3"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
-          </div>
+          ${renderSetRows(it, setCount)}
           <div class="set-actions">
             <button class="btn-start-timer">Start</button>
             <button class="btn-reset-timer">Reset</button>
@@ -485,7 +610,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
             btn.onclick = async () => {
               const cards = Array.from(document.querySelectorAll('#workout-list .card'))
               if (!cards.length) return
-              const email = document.getElementById('user-email')?.textContent || ''
+              const email = (document.getElementById('user-email')?.textContent || localStorage.getItem('homeworkouts_user_email') || '').trim()
               // Build a batch first (no UI changes yet)
               const pending = loadPending() || {}
               const batch = { email, items: [] }
@@ -493,7 +618,8 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                 const gid = c.getAttribute('data-id') || ''
                 if (!gid) continue
                 const cardSets = []
-                for (let s = 1; s <= 3; s++) {
+                const setCount = clampInt(c.getAttribute('data-set-count'), 1, 50, getDefaultSetCount())
+                for (let s = 1; s <= setCount; s++) {
                   const reps = c.querySelector(`.s${s}-reps`)?.value || ''
                   const load = c.querySelector(`.s${s}-load`)?.value || ''
                   const chk = c.querySelector(`.chk-done-set[data-set="${s}"]`)
@@ -507,8 +633,10 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                 batch.items.push(item)
               }
               if (!batch.items.length) return
-              // Ask for confirmation
-              const confirmed = await (async function showConfirm(msg) {
+              const anyNotDone = batch.items.some(it => !it.is_done)
+              const newState = !!anyNotDone
+
+              const showConfirm = async (msg) => {
                 try {
                   const modal = document.getElementById('confirm-modal')
                   const msgEl = document.getElementById('confirm-message')
@@ -517,6 +645,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                   if (!modal || !msgEl || !yes || !no) return true
                   msgEl.textContent = msg
                   modal.classList.remove('hidden')
+                  try { modal.scrollIntoView({ block: 'center' }) } catch {}
                   return await new Promise((res) => {
                     const onYes = () => { cleanup(); res(true) }
                     const onNo = () => { cleanup(); res(false) }
@@ -525,10 +654,35 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                     no.addEventListener('click', onNo)
                   })
                 } catch (e) { return true }
-              })(`This will save ${batch.items.length} exercises to Google Sheets. Proceed?`)
-              if (!confirmed) return
-              const anyNotDone = batch.items.some(it => !it.is_done)
-              const newState = !!anyNotDone
+              }
+
+              // Local fatigue history: append only when marking complete.
+              try {
+                if (newState) {
+                  const histItems = cards.map(c => {
+                    const setCount = clampInt(c.getAttribute('data-set-count'), 1, 50, 1)
+                    const muscleGroup = c.getAttribute('data-muscle-group') || ''
+                    const firstMuscle = String(muscleGroup || '').split(',')[0] || ''
+                    return {
+                      exercise: c.getAttribute('data-exercise') || (c.querySelector('strong')?.textContent || '').trim(),
+                      muscleGroup,
+                      muscle: firstMuscle,
+                      setCount,
+                      fatigueStr: c.getAttribute('data-fatigue-str') || ''
+                    }
+                  })
+                  const fallbackMuscle = (histItems.find(x => x && x.muscle) || {}).muscle || ''
+                  appendWorkoutHistory(email, histItems, new Date(), 'complete')
+                  const fm = computeMuscleFatigueMap(loadHistory(email), new Date())
+                  try {
+                    const setup = JSON.parse(localStorage.getItem('homeworkouts_setup_temp') || 'null')
+                    const mg = normalizeMuscleKeyTitle(setup?.selectedType || '')
+                    const block = makeHistorySummaryBlock(mg || fallbackMuscle || '', fm, new Date())
+                    localStorage.setItem('homeworkouts_last_history_block', JSON.stringify(block))
+                  } catch {}
+                }
+              } catch (e) { console.warn('fatigue history append failed', e) }
+
               setStatus(newState ? 'Marking workout complete…' : 'Unmarking workout…')
               try { window.showLoading && window.showLoading('Saving…') } catch {}
               // Optimistic UI now
@@ -546,34 +700,42 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
                 // Always save locally first
                 enqueueBatch(batch)
                 if (!navigator.onLine) {
-                  setStatus('Offline — saved locally and queued for sync')
+                  setStatus('Saved locally — queued for sync (offline)')
                 } else {
-                  setStatus('Syncing to server…')
-                  try {
-                    // Use unified flush with splash/progress when available
-                    if (window && typeof window.showCompleteAndFlush === 'function') {
-                      await window.showCompleteAndFlush()
-                      setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
-                    } else {
-                      // Fallback: perform immediate ops without splash
-                      const ops = []
-                      const p = loadPending() || {}
-                      for (const item of batch.items) {
-                        const gid = item.glideId
-                        try { const rep = p[gid] && p[gid].replacement; if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || '')) } catch (e) {}
-                        for (const s of item.sets || []) {
-                          ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
-                          if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+                  setStatus('Saved locally — ready to sync')
+                  const doSyncNow = await showConfirm(`Saved locally. Sync ${batch.items.length} exercises to Google Sheets now?`)
+                  if (doSyncNow) {
+                    try {
+                      // Use unified flush with splash/progress when available
+                      if (window && typeof window.showCompleteAndFlush === 'function') {
+                        // Launch the complete-and-flush flow in background so UI can continue.
+                        try { window.showCompleteAndFlush() } catch (e) { console.warn('background complete flush failed to start', e) }
+                        // Immediately switch to Fatigue tab while sync runs in background
+                        try { show && show('fatigue') } catch (e) {}
+                        setStatus(newState ? 'Workout marked complete — syncing in background' : 'Workout unmarked — syncing in background')
+                      } else {
+                        // Fallback: perform immediate ops without splash
+                        const ops = []
+                        const p = loadPending() || {}
+                        for (const item of batch.items) {
+                          const gid = item.glideId
+                          try { const rep = p[gid] && p[gid].replacement; if (rep) ops.push(replaceGlideExercise(gid, rep.equipment || '', rep.muscles || '')) } catch (e) {}
+                          for (const s of item.sets || []) {
+                            ops.push(syncSetToGlide(gid, s.setNumber, s.reps || '', s.load || ''))
+                            if (s.done) ops.push(setDone(gid, s.setNumber, s.reps || '', s.load || '', email))
+                          }
+                          ops.push(setGlideWodState(gid, item.is_done, email))
                         }
-                        ops.push(setGlideWodState(gid, item.is_done, email))
+                        await Promise.all(ops)
+                        try { const p2 = loadPending(); for (const it of batch.items) delete p2[it.glideId]; savePending(p2) } catch (e) {}
+                        setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
                       }
-                      await Promise.all(ops)
-                      try { const p2 = loadPending(); for (const it of batch.items) delete p2[it.glideId]; savePending(p2) } catch (e) {}
-                      setStatus(newState ? 'Workout marked complete' : 'Workout unmarked')
+                    } catch (e) {
+                      console.error('Failed to flush after enqueue', e)
+                      setStatus('Sync failed — queued for retry')
                     }
-                  } catch (e) {
-                    console.error('Failed to flush after enqueue', e)
-                    setStatus('Sync failed — queued for retry')
+                  } else {
+                    setStatus('Saved locally — queued for sync')
                   }
                 }
               } catch (e) {
@@ -595,12 +757,13 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
     const it = items.find(r => (r.id||'') === detailId) || items[0]
     const idx = Math.max(0, items.findIndex(r => (r.id||'') === (it.id||'')))
     const id = it.id || ''
+    const setCount = inferSetCount(it)
     const isIso = (it.work_s != null) || String(it.reps_text || '').toLowerCase().includes('tenir') || String(it.exercise||'').toLowerCase().includes('plank')
     const secs = it.work_s != null ? parseInt(it.work_s, 10) : guessIsoSeconds(String(it.reps_text||''))
     const exLabel = `Exercice ${idx+1}`
-    const isCurrent = (window.fitbookHiitCurrentId && window.fitbookHiitCurrentId === id)
+    const isCurrent = (window.homeworkoutsHiitCurrentId && window.homeworkoutsHiitCurrentId === id)
     list.innerHTML = `
-    <div class="card ${isCurrent ? 'current-exercise' : ''}" data-id="${id}">
+    <div class="card ${isCurrent ? 'current-exercise' : ''}" data-id="${id}" data-set-count="${setCount}" data-exercise="${escapeAttr(it.exercise || '')}" data-muscle-group="${escapeAttr(it.muscles || '')}" data-fatigue-str="${escapeAttr(it.fatigue_str || '')}">
       <div class="row">
         <div class="col">
           <strong>${escapeHtml(it.exercise || '')}</strong>
@@ -614,24 +777,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       </div>
       <div class="timer"><span class="mm">00</span>:<span class="ss">00</span></div>
       <div class="sets">
-        <div class="set-row">
-          <label>Set 1</label>
-          <input class="s1-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set1_reps ?? ''}">
-          <input class="s1-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set1_load ?? ''}">
-          <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="1"> Done</label> <select class="rest-select" data-set="1"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
-        </div>
-        <div class="set-row">
-          <label>Set 2</label>
-          <input class="s2-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set2_reps ?? ''}">
-          <input class="s2-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set2_load ?? ''}">
-          <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="2"> Done</label> <select class="rest-select" data-set="2"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
-        </div>
-        <div class="set-row">
-          <label>Set 3</label>
-          <input class="s3-reps" type="number" inputmode="numeric" placeholder="reps" value="${it.set3_reps ?? ''}">
-          <input class="s3-load" type="number" inputmode="decimal" placeholder="weight (lb)" value="${it.set3_load ?? ''}">
-          <div class="set-row-actions"><label class="done-check"><input type="checkbox" class="chk-done-set" data-set="3"> Done</label> <select class="rest-select" data-set="3"><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></div>
-        </div>
+        ${renderSetRows(it, setCount)}
         <div class="set-actions">
           <button class="btn-start-timer">Start</button>
           <button class="btn-reset-timer">Reset</button>
@@ -651,7 +797,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
 
     // Strength list: open details when a list item is clicked so sets/inputs are editable
     if (target.closest('.card-list-item')) {
-      window.fitbookDetailId = glideId
+      window.homeworkoutsDetailId = glideId
       renderWorkouts(items)
       return
     }
@@ -795,7 +941,7 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       const btn = target.closest('.btn-reset-timer')
       const cardEl = btn ? btn.closest('.card') : null
       try {
-        if (fitbookTimerInterval) { clearInterval(fitbookTimerInterval); fitbookTimerInterval = null }
+        if (homeworkoutsTimerInterval) { clearInterval(homeworkoutsTimerInterval); homeworkoutsTimerInterval = null }
         const tEl = cardEl ? cardEl.querySelector('.timer') : null
         if (tEl) { const mm = tEl.querySelector('.mm'); const ss = tEl.querySelector('.ss'); if (mm) mm.textContent = '00'; if (ss) ss.textContent = '00' }
         setStatus('Timer reset')
@@ -808,13 +954,13 @@ try { window.renderWorkoutsFromGenerated = function(genItems) {
       const tEl = card.querySelector('.timer')
       // Mark current exercise for HIIT highlighting
       const gid = card.getAttribute('data-id') || ''
-      if (gid) window.fitbookHiitCurrentId = gid
+      if (gid) window.homeworkoutsHiitCurrentId = gid
       startCountdown(tEl, secs)
       return
     }
 
     if (target.closest('.btn-reset')) {
-      if (fitbookTimerInterval) { clearInterval(fitbookTimerInterval); fitbookTimerInterval = null }
+      if (homeworkoutsTimerInterval) { clearInterval(homeworkoutsTimerInterval); homeworkoutsTimerInterval = null }
       const tEl = card.querySelector('.timer')
       if (tEl) {
         tEl.classList.remove('hidden')
@@ -872,45 +1018,99 @@ async function loadHiitWorkouts(email) {
     console.debug('getGlideHiitSummary result', json)
     if (json && json.status === 'ok') {
       // Map HIIT rows and include round/slot and rest
-      let items = (json.sample || []).map(r => ({
-        id: r.id,
-        order: r.order,
-        round: r.round,
-        slot: r.slot_in_round,
-        exercise: r.exercise,
-        muscles: r.interval_label || '',
-        equipment: '',
-        reps_text: `${r.work_s || 40}s`,
-        work_s: r.work_s || 40,
-        rest_s: r.rest_s || 20,
-        video_url: r.video_url || '',
-        image_url: r.image_url || r.img_url || '',
-        is_done: parseBool(r.is_done)
-      }))
-      // Clamp to computed total based on selected duration if backend over-generates
+      let items = (json.sample || []).map((r, idx) => {
+        const isDone = (r.is_done !== undefined && r.is_done !== null) ? parseBool(r.is_done) : false;
+        const order = r.order || (idx + 1)
+        const intervalId = `${email || 'local'}_HIIT_${order}`
+        const glideId = r.id || ''
+        const fallbackVideo = (r && r.exercise) ? ('https://www.youtube.com/results?search_query=' + encodeURIComponent(String(r.exercise))) : ''
+        return {
+          id: intervalId,
+          glideId,
+          order,
+          round: (r.round != null ? r.round : null),
+          slot: (r.slot_in_round != null ? r.slot_in_round : (r.slot != null ? r.slot : null)),
+          exercise: r.exercise,
+          muscles: r.interval_label || '',
+          equipment: '',
+          reps_text: `${r.work_s || 40}s`,
+          work_s: r.work_s || 40,
+          rest_s: r.rest_s || 20,
+          video_url: r.video_url || fallbackVideo,
+          image_url: r.image_url || r.img_url || '',
+          is_done: isDone
+        }
+      })
+
+      // Normalize missing round/slot using order so grouping is stable.
       try {
-        const minutesLS = localStorage.getItem('fitbook_hiit_minutes')
-        const minutes = minutesLS ? parseInt(minutesLS,10) : null
-        const work = items[0]?.work_s || 40
-        const rest = items[0]?.rest_s || 20
-        const total = minutes ? Math.max(1, Math.floor((minutes*60) / (work+rest))) : null
+        const minutes = getHiitLocalMinutes()
+        const uniqueCount = (minutes != null) ? Math.max(1, Math.min(5, Math.floor(minutes))) : Math.min(5, Math.max(1, items.length))
+        const roundSize = Math.max(1, Math.min(5, uniqueCount || 5))
+        let needsFix = false
+        for (const it of items) {
+          if (it.round == null || it.slot == null) { needsFix = true; break }
+        }
+        if (needsFix) {
+          items = items.map((it) => {
+            const ord = clampInt(it.order, 1, 99999, 1)
+            const round = it.round != null ? it.round : (Math.floor((ord - 1) / roundSize) + 1)
+            const slot = it.slot != null ? it.slot : (((ord - 1) % roundSize) + 1)
+            return Object.assign({}, it, { round, slot })
+          })
+        }
+      } catch {}
+
+      // Clamp/expand to the requested duration.
+      try {
+        const minutes = getHiitLocalMinutes()
+        const { work, rest } = getHiitLocalWorkRest()
+        const cycle = Math.max(1, (Number(items[0]?.work_s ?? work) + Number(items[0]?.rest_s ?? rest)))
+        const total = (minutes != null) ? Math.max(1, Math.floor((minutes * 60) / cycle)) : null
+        const uniqueCount = (minutes != null) ? Math.max(1, Math.min(5, Math.floor(minutes))) : Math.min(5, Math.max(1, items.length))
+        const roundSize = Math.max(1, Math.min(5, uniqueCount || 5))
         if (total && items.length > total) items = items.slice(0, total)
+        if (total && items.length > 0 && items.length < total) {
+          const uniques = items.slice(0, Math.min(roundSize, items.length))
+          const expanded = []
+          for (let i = 0; i < total; i++) {
+            const src = uniques[i % uniques.length]
+            expanded.push(Object.assign({}, src, {
+              id: `${email || 'local'}_HIIT_${i + 1}`,
+              glideId: src.glideId || src.id || '',
+              order: i + 1,
+              round: Math.floor(i / roundSize) + 1,
+              slot: (i % roundSize) + 1
+            }))
+          }
+          items = expanded
+        }
       } catch {}
       // If no intervals exist, attempt to generate then reload
       if (!items.length) {
         setStatus('No HIIT yet. Generating…')
-        try { 
-          console.debug('Calling generateHiit for', email)
-          await generateHiit(email) 
-          console.debug('generateHiit completed')
-        } catch (e) { console.warn('generateHiit failed', e) }
         try {
-          const j2 = await getGlideHiitSummary(email)
-          console.debug('getGlideHiitSummary after generate result', j2)
+          console.debug('Calling generateHiit for', email)
+          await generateHiit(email)
+          console.debug('generateHiit completed')
+          // Poll for generated results (best-effort)
+          const maxAttempts = 8
+          let attempt = 0
+          let j2 = null
+          while (attempt < maxAttempts) {
+            attempt += 1
+            await new Promise(r => setTimeout(r, 1000))
+            try { j2 = await getGlideHiitSummary(email); console.debug('post-generate poll', attempt, j2); if (j2 && j2.status === 'ok' && Array.isArray(j2.sample) && j2.sample.length) break } catch (e) { console.warn('post-generate poll failed', e) }
+          }
           if (j2 && j2.status === 'ok') {
-            items = (j2.sample || []).map(r => ({
-              id: r.id,
-              order: r.order,
+            items = (j2.sample || []).map((r, idx) => {
+              const order = r.order || (idx + 1)
+              const intervalId = `${email || 'local'}_HIIT_${order}`
+              const glideId = r.id || ''
+              return {
+              id: intervalId,
+              glideId,
+              order,
               round: r.round,
               slot: r.slot_in_round,
               exercise: r.exercise,
@@ -921,17 +1121,43 @@ async function loadHiitWorkouts(email) {
               rest_s: r.rest_s || 20,
               video_url: r.video_url || '',
               image_url: r.image_url || r.img_url || ''
-            }))
+              }
+            })
             try {
-              const minutesLS = localStorage.getItem('fitbook_hiit_minutes')
-              const minutes = minutesLS ? parseInt(minutesLS,10) : null
-              const work = items[0]?.work_s || 40
-              const rest = items[0]?.rest_s || 20
-              const total = minutes ? Math.max(1, Math.floor((minutes*60) / (work+rest))) : null
+              const minutes = getHiitLocalMinutes()
+              const { work, rest } = getHiitLocalWorkRest()
+              const cycle = Math.max(1, (Number(items[0]?.work_s ?? work) + Number(items[0]?.rest_s ?? rest)))
+              const total = (minutes != null) ? Math.max(1, Math.floor((minutes * 60) / cycle)) : null
+              // If server returned more than needed, truncate.
               if (total && items.length > total) items = items.slice(0, total)
+              // If server returned a short sample (e.g. 3) while the requested
+              // total is larger (e.g. 60), expand the sample locally by cycling
+              // the unique exercises (but keep at most 5 uniques per block).
+              if (total && items.length > 0 && items.length < total) {
+                try {
+                  const uniqueCount = (minutes != null) ? Math.max(1, Math.min(5, Math.floor(minutes))) : Math.min(5, items.length)
+                  const roundSize = Math.max(1, Math.min(5, uniqueCount || 5))
+                  const uniques = items.slice(0, Math.min(roundSize, items.length))
+                  const expanded = []
+                  for (let i = 0; i < total; i++) {
+                    const src = uniques[i % uniques.length]
+                    expanded.push(Object.assign({}, src, {
+                      id: `${email || 'local'}_HIIT_${i + 1}`,
+                      glideId: src.glideId || src.id || '',
+                      order: i + 1,
+                      round: Math.floor(i / roundSize) + 1,
+                      slot: (i % roundSize) + 1
+                    }))
+                  }
+                  items = expanded
+                } catch (e) {
+                  // If expansion fails, keep the original sample
+                  console.warn('HIIT sample expansion failed', e)
+                }
+              }
             } catch {}
           }
-        } catch (e) { console.warn('post-generate getGlideHiitSummary failed', e) }
+        } catch (e) { console.warn('generateHiit failed', e) }
       }
       renderHiitRounds(items)
       setStatus(items.length ? `HIIT intervals: ${items.length}` : 'HIIT ready')
@@ -940,49 +1166,31 @@ async function loadHiitWorkouts(email) {
       try {
         const prof = await debugProfile(email)
         const minutes = (prof && prof.hiit && prof.hiit.minutes) ? parseInt(prof.hiit.minutes, 10) : 20
-        const work = (prof && prof.hiit && prof.hiit.workSeconds) ? parseInt(prof.hiit.workSeconds, 10) : 40
-        const rest = (prof && prof.hiit && prof.hiit.restSeconds) ? parseInt(prof.hiit.restSeconds, 10) : 20
+        const { work: defWork, rest: defRest } = getHiitLocalWorkRest()
+        const work = (prof && prof.hiit && prof.hiit.workSeconds) ? parseInt(prof.hiit.workSeconds, 10) : defWork
+        const rest = (prof && prof.hiit && prof.hiit.restSeconds) ? parseInt(prof.hiit.restSeconds, 10) : defRest
         const total = Math.max(1, Math.floor((minutes*60) / (work+rest)))
         const items = Array.from({length: total}, (_, i) => ({ id: `fallback_${i+1}`, order: i+1, round: Math.floor(i/5)+1, slot: (i%5)+1, exercise: `Exercise ${i+1}`, muscles: `${work}/${rest}`, work_s: work, rest_s: rest }))
-        renderHiitRounds(items)
-        setStatus(`HIIT intervals (fallback): ${items.length}`)
+        const itemsWithDone = items.map(it => ({ ...it, is_done: false }))
+        renderHiitRounds(itemsWithDone)
+        setStatus(`HIIT intervals (fallback): ${itemsWithDone.length}`)
       } catch {
         setStatus('Failed to load HIIT')
       }
     }
   } catch (e) { 
     console.warn('loadHiitWorkouts failed', e)
-    // Offline/Network fallback: try to derive HIIT intervals using cached exercises.json
+    // Offline/Network fallback: try to derive HIIT intervals using cached Exercices.json
     try {
-      const minutesLS = localStorage.getItem('fitbook_hiit_minutes')
-      const minutes = minutesLS ? parseInt(minutesLS,10) : 20
-      const workLS = localStorage.getItem('fitbook_hiit_work')
-      const restLS = localStorage.getItem('fitbook_hiit_rest')
-      const work = workLS ? parseInt(workLS,10) : 40
-      const rest = restLS ? parseInt(restLS,10) : 20
+      const minutes = getHiitLocalMinutes() ?? 20
+      const { work, rest } = getHiitLocalWorkRest()
       const total = Math.max(1, Math.floor((minutes*60) / (work+rest)))
 
       // Try to use cached exercises for variety
-      let cached = null
-      if (typeof caches !== 'undefined' && caches.match) {
-        try { cached = await caches.match('/exercises.json') } catch (e3) { cached = null }
-        if (!cached && caches.keys) {
-          try {
-            const keys = await caches.keys()
-            for (const k of keys) {
-              try {
-                const c = await caches.open(k)
-                const m = await c.match('/exercises.json')
-                if (m) { cached = m; break }
-              } catch (e4) {}
-            }
-          } catch (e5) {}
-        }
-      }
-
       let items = []
-      if (cached) {
-        try {
+      try {
+        const cached = await getCachedResponse('/Exercices.json')
+        if (cached) {
           const arr = await cached.json()
           if (Array.isArray(arr) && arr.length) {
             // Shuffle and pick `total` exercises (allow repeats if total > arr.length)
@@ -991,16 +1199,21 @@ async function loadHiitWorkouts(email) {
               const ex = shuffled[i % shuffled.length] || shuffled[0]
               items.push({ id: `offline_${i+1}`, order: i+1, round: Math.floor(i/5)+1, slot: (i%5)+1, exercise: ex.name || ex.exercise || `Exercise ${i+1}`, muscles: Array.isArray(ex.muscles) ? ex.muscles.join(', ') : (ex.muscles || ''), work_s: work, rest_s: rest })
             }
+            // Ensure is_done: false for all
+            items = items.map(it => ({ ...it, is_done: false }))
             console.debug('Using cached exercises for offline HIIT', {minutes, work, rest, total, sample: items.slice(0,3)})
             renderHiitRounds(items)
             setStatus(`HIIT intervals (offline, cached): ${items.length}`)
             return
           }
-        } catch (e6) { console.warn('Failed to read cached exercises', e6) }
+        }
+      } catch (e6) {
+        console.warn('Failed to read cached exercises', e6)
       }
 
       // Fallback to simple placeholders
       items = Array.from({length: total}, (_, i) => ({ id: `offline_${i+1}`, order: i+1, round: Math.floor(i/5)+1, slot: (i%5)+1, exercise: `Exercise ${i+1}`, muscles: `${work}/${rest}`, work_s: work, rest_s: rest }))
+      items = items.map(it => ({ ...it, is_done: false }))
       console.debug('Using offline HIIT placeholder fallback', {minutes, work, rest, total})
       renderHiitRounds(items)
       setStatus(`HIIT intervals (offline): ${items.length}`)
@@ -1016,7 +1229,32 @@ async function loadHiitWorkouts(email) {
 function renderHiitRounds(items) {
   const list = document.getElementById('workout-list')
   if (!list) return
-  if (!items || !items.length) { list.innerHTML = '<p>No HIIT yet.</p>'; return }
+  if (!items || !items.length) { list.innerHTML = '<p>No HIIT yet.</p>'; window.hiitItems = items; return }
+    // Store authoritative HIIT items globally for all handlers
+    window.hiitItems = items
+
+  // Normalize ids/rounds to prevent collisions (a single DONE must not affect all cards)
+  try {
+    const emailForIds = (document.getElementById('user-email')?.textContent || '').trim() || 'local'
+    items.forEach((it, idx) => {
+      const ord = clampInt(it?.order ?? (idx + 1), 1, 9999, idx + 1)
+      it.order = ord
+      if (!it.id) it.id = `${emailForIds}_HIIT_${ord}`
+      if (it.round == null || it.round === '') it.round = Math.floor((ord - 1) / 5) + 1
+      if (it.slot == null && it.slot_in_round == null) it.slot = ((ord - 1) % 5) + 1
+    })
+  } catch {}
+  // Always merge local pending is_done state for rounds (force update)
+  const pending = loadPending() || {}
+  let mergeCount = 0;
+  items.forEach(it => {
+    const gid = it.id || ''
+    if (pending[gid] && typeof pending[gid].is_done === 'boolean') {
+      if (it.is_done !== pending[gid].is_done) mergeCount++;
+      it.is_done = pending[gid].is_done
+    }
+  })
+  console.debug('[HIIT RENDER] Merged pending state for', mergeCount, 'intervals. Pending:', JSON.stringify(pending));
   // Group by round
   const byRound = {}
   items.forEach(it => {
@@ -1026,36 +1264,95 @@ function renderHiitRounds(items) {
   })
   const rounds = Object.keys(byRound).map(n => parseInt(n,10)).sort((a,b)=>a-b)
   list.classList.remove('list-mode')
+  const { work: defaultWork, rest: defaultRest } = getHiitLocalWorkRest()
   list.innerHTML = rounds.map(rn => {
-    const rows = byRound[rn].slice().sort((a,b)=> (parseInt(a.slot||0,10) - parseInt(b.slot||0,10)))
-    const label = `Set ${rn}`
-    const work = 40
-    const rest = 20
-    const isAllDone = rows.every(it => (it.is_done === true))
-    const doneDotRound = isAllDone ? `<span class="done-dot done"></span>` : `<span class="done-dot"></span>`
+    const rows = byRound[rn].slice().sort((a,b)=> (parseInt((a.slot ?? a.slot_in_round ?? 0),10) - parseInt((b.slot ?? b.slot_in_round ?? 0),10)));
+    const label = `Set ${rn}`;
+    const work = clampInt(rows[0]?.work_s ?? defaultWork, 5, 600, 40);
+    const rest = clampInt(rows[0]?.rest_s ?? defaultRest, 0, 600, 20);
+    // Debug: log is_done state for this round
+    console.debug(`[RENDER HIIT] Round ${rn} is_done states:`, rows.map(it => ({id: it.id, is_done: it.is_done})));
+    const isAllDone = rows.every(it => (it.is_done === true));
+    const doneDotRound = isAllDone ? `<span class=\"done-dot done\"></span>` : `<span class=\"done-dot\"></span>`;
+    // Always add 'disabled-card' if isAllDone (local optimistic)
     return `
-    <div class="card hiit-round ${isAllDone ? 'disabled-card' : ''}" data-round="${rn}">
-      <div class="row">
-        <div class="col">
-          <strong>${doneDotRound}${label}</strong> <button class="btn-done-round" data-round="${rn}" data-done="${isAllDone ? '1' : '0'}">DONE</button>
-          <div class="muted">${work}/${rest} • ${rows.length} exercices</div>
+    <div class=\"card hiit-round${isAllDone ? ' disabled-card' : ''}\" data-round=\"${rn}\">
+      <div class=\"row\">
+        <div class=\"col\">
+          <strong>${doneDotRound}${label}</strong> <button type=\"button\" class=\"btn-done-round\" data-round=\"${rn}\" data-done=\"${isAllDone ? '1' : '0'}\">DONE</button>
+          <div class=\"muted\">${work}/${rest} • ${rows.length} exercices</div>
         </div>
-        <div class="col actions">
-          <button class="btn-start-round" data-round="${rn}" data-work="${work}" data-rest="${rest}">Start</button>
-          <button class="btn-pause-round" data-round="${rn}">Pause</button>
-          <button class="btn-resume-round" data-round="${rn}">Resume</button>
-          <button class="btn-reset-round" data-round="${rn}">Reset</button>
+        <div class=\"col actions\">
+          <button type=\"button\" class=\"btn-start-round\" data-round=\"${rn}\" data-work=\"${work}\" data-rest=\"${rest}\">Start</button>
+          <button type=\"button\" class=\"btn-pause-round\" data-round=\"${rn}\">Pause</button>
+          <button type=\"button\" class=\"btn-resume-round\" data-round=\"${rn}\">Resume</button>
+          <button type=\"button\" class=\"btn-reset-round\" data-round=\"${rn}\">Reset</button>
         </div>
       </div>
-      <ul class="hiit-ex-list">
+      <ul class=\"hiit-ex-list\">
         ${rows.map((it, idx) => {
-          const dot = (it.is_done === true) ? `<span class="done-dot done"></span>` : `<span class="done-dot"></span>`
-          return `<li class="hiit-ex" data-id="${it.id}" data-order="${it.order}" data-slot="${it.slot}">${dot}<span class="ex-name">${idx+1}. ${escapeHtml(it.exercise||'')}</span>${it.video_url ? `<a class="ex-link" href="${escapeAttr(it.video_url)}" target="_blank" title="YouTube">YouTube ↗</a>` : ''}${it.image_url ? `<img class="ex-img" src="${escapeAttr(it.image_url)}" alt="Exercise image">` : ''}</li>`
+          const dot = (it.is_done === true) ? `<span class=\"done-dot done\"></span>` : `<span class=\"done-dot\"></span>`;
+          const slot = it.slot ?? it.slot_in_round ?? '';
+          const v = it.video_url || it.video || (it.exercise ? ('https://www.youtube.com/results?search_query=' + encodeURIComponent(String(it.exercise))) : '')
+          return `<li class=\"hiit-ex\" data-id=\"${it.id}\" data-order=\"${it.order}\" data-slot=\"${slot}\">${dot}<span class=\"ex-name\">${idx+1}. ${escapeHtml(it.exercise||'')}</span>${v ? `<a class=\"ex-link\" href=\"${escapeAttr(v)}\" target=\"_blank\" title=\"YouTube\">YouTube ↗</a>` : ''}${it.image_url ? `<img class=\"ex-img\" src=\"${escapeAttr(it.image_url)}\" alt=\"Exercise image\">` : ''}</li>`;
         }).join('')}
       </ul>
-      <div class="timer"><span class="mm">00</span>:<span class="ss">00</span></div>
-    </div>`
+      <div class=\"timer\"><span class=\"mm\">00</span>:<span class=\"ss\">00</span></div>
+    </div>`;
   }).join('')
+  // Inject Workout Complete button if all rounds are done
+  const allDone = rounds.length > 0 && rounds.every(rn => byRound[rn].every(it => it.is_done === true))
+  const parent = list.parentElement
+  if (parent) {
+    const existing = parent.querySelector('.workout-actions')
+    if (existing) existing.remove()
+    if (allDone) {
+      parent.insertAdjacentHTML('beforeend', '<div class="workout-actions"><button id="btn-workout-complete">Workout complete</button></div>')
+
+      // HIIT completion: local-first enqueue + show splash.
+      try {
+        const btn = parent.querySelector('#btn-workout-complete')
+        if (btn) {
+          btn.onclick = async () => {
+            try {
+              const email = (document.getElementById('user-email')?.textContent || localStorage.getItem('homeworkouts_user_email') || '').trim()
+              const hiitItems = window.hiitItems || items || []
+              const batch = { email, items: [] }
+              for (const it of hiitItems) {
+                const gid = it.id || ''
+                if (!gid) continue
+                batch.items.push({ glideId: gid, is_done: true, sets: [] })
+              }
+              if (batch.items.length) enqueueBatch(batch)
+
+              // Append local history so calendar shows this day as a workout day.
+              try {
+                const histItems = hiitItems.map(it => {
+                  const mg = String(it.muscles || '').trim()
+                  const firstMuscle = mg.split(',')[0] || ''
+                  return {
+                    exercise: it.exercise || '',
+                    muscleGroup: mg,
+                    muscle: firstMuscle,
+                    setCount: 1,
+                    fatigueStr: ''
+                  }
+                })
+                appendWorkoutHistory(email, histItems, new Date(), 'complete')
+              } catch (e) { console.warn('HIIT history append failed', e) }
+
+              setStatus('Workout complete — saved locally')
+              // Always show completion splash; in offline mode it shows queued status.
+              try { window.showCompleteAndFlush && window.showCompleteAndFlush() } catch (e) { console.warn('complete splash failed', e) }
+            } catch (e) {
+              console.error('HIIT complete failed', e)
+              setStatus('Workout complete failed')
+            }
+          }
+        }
+      } catch {}
+    }
+  }
 
   let seqState = { running: false, round: null, idx: 0, phase: 'work', work: 40, rest: 20, selectedIdx: null }
   function runAuto(card) {
@@ -1069,7 +1366,7 @@ function renderHiitRounds(items) {
       const el = itemsEls[seqState.idx]
       el.classList.add('live')
       const gid = el.getAttribute('data-id')||''
-      if (gid) window.fitbookHiitCurrentId = gid
+      if (gid) window.homeworkoutsHiitCurrentId = gid
       seqState.phase = 'work'
       startCountdown(tEl, work, () => {
         seqState.phase = 'rest'
@@ -1087,6 +1384,14 @@ function renderHiitRounds(items) {
     const t = ev.target
     const card = t.closest('.hiit-round')
     if (!card) return
+
+    // Important: keep HIIT controls from submitting any surrounding <form>
+    // (which can trigger a full refresh/regenerate and look like the workout "changes").
+    if (t.closest('.btn-done-round, .btn-start-round, .btn-pause-round, .btn-resume-round, .btn-reset-round')) {
+      try { ev.preventDefault() } catch {}
+      try { ev.stopPropagation() } catch {}
+    }
+
     const roundNum = parseInt(card.getAttribute('data-round')||'1',10)
     if (t.closest('.btn-reset-round')) {
       seqState = { running: false, round: null, idx: 0, phase: 'work', work: seqState.work, rest: seqState.rest }
@@ -1117,19 +1422,59 @@ function renderHiitRounds(items) {
 
     // Toggle round done state and grey/un-grey the card (optimistic UI + per-interval fallback)
     if (t.closest('.btn-done-round')) {
-      const email = document.getElementById('user-email')?.textContent || ''
-      const btn = t.closest('.btn-done-round')
-      const r = parseInt(btn.getAttribute('data-round')||'0',10)
-      const isDoneNow = btn.getAttribute('data-done') === '1'
-      const newState = !isDoneNow
-      if (!email || !r) return
-      setStatus(newState ? 'Marking set done…' : 'Unmarking set…')
-      // Optimistic UI
-      btn.setAttribute('data-done', newState ? '1' : '0')
-      if (newState) { card.classList.add('disabled-card') } else { card.classList.remove('disabled-card') }
+      const email = document.getElementById('user-email')?.textContent || '';
+      const btn = t.closest('.btn-done-round');
+      const r = parseInt(btn.getAttribute('data-round')||'0',10);
+      const isDoneNow = btn.getAttribute('data-done') === '1';
+      const newState = !isDoneNow;
+      if (!r) return;
+      setStatus(newState ? 'Marking set done…' : 'Unmarking set…');
+      // Always operate on authoritative HIIT items
+      const hiitItems = window.hiitItems || items;
+      try {
+        const pending = loadPending() || {};
+        let changed = 0;
+        // Set all intervals in the round to newState (force integer comparison)
+        hiitItems.forEach(it => {
+          if (parseInt(it.round, 10) === r) {
+            it.is_done = newState;
+            const gid = it.id || '';
+            if (!pending[gid]) pending[gid] = { glideId: gid, is_done: false, sets: [] };
+            pending[gid].is_done = newState;
+            changed++;
+          }
+        });
+        savePending(pending);
+        // Debug: log authoritative state after update
+        console.debug('[HIIT DONE PATCH] After marking round', r, 'done:', newState, 'changed:', changed, 'pending:', JSON.stringify(pending));
+        console.debug('[HIIT DONE PATCH] hiitItems state:', hiitItems.map(it => ({id: it.id, round: it.round, is_done: it.is_done})));
+      } catch (e) { console.warn('failed to save HIIT round done state', e); }
+      // Reload items from pending to ensure UI reflects latest state
+      const pending2 = loadPending() || {};
+      hiitItems.forEach(it => {
+        const gid = it.id || '';
+        if (pending2[gid] && typeof pending2[gid].is_done === 'boolean') {
+          it.is_done = pending2[gid].is_done;
+        }
+      });
+      // Force re-render with updated authoritative array
+      renderHiitRounds(hiitItems);
+      // Debug: log DOM state after render
+      setTimeout(() => {
+        const cards = Array.from(document.querySelectorAll('.hiit-round')).map(card => ({
+          className: card.className,
+          dataset: { ...card.dataset },
+          html: card.outerHTML.slice(0, 200)
+        }));
+        console.debug('[HIIT DONE PATCH] Card states after render:', cards);
+      }, 100);
       try { window.showLoading && window.showLoading(newState ? 'Marking…' : 'Updating…') } catch {}
       ;(async () => {
         try {
+          if (!email) {
+            setStatus(newState ? 'Set marked done' : 'Set unmarked')
+            return
+          }
           // Try round-level update first
           let ok = false
           try {
@@ -1138,22 +1483,25 @@ function renderHiitRounds(items) {
           } catch {}
           // Fallback: update each interval in the round individually
           if (!ok) {
-            const liEls = Array.from(card.querySelectorAll('.hiit-ex'))
-            for (const li of liEls) {
-              const ord = parseInt(li.getAttribute('data-order')||'0',10)
-              if (ord) {
-                try { await setHiitIsDone(email, ord, newState) } catch {}
+            for (const it of items) {
+              if (parseInt(it.round||1,10) === r) {
+                const ord = parseInt(it.order||0,10)
+                if (ord) {
+                  try { await setHiitIsDone(email, ord, newState) } catch {}
+                }
               }
             }
             ok = true // best-effort
           }
           setStatus(newState ? 'Set marked done' : 'Set unmarked')
-          // Reload HIIT list to reflect backend state
-          try { await loadHiitWorkouts(email) } catch {}
+          // Optionally reload from backend if strict sync needed
+          // try { await loadHiitWorkouts(email) } catch {}
         } catch (e) {
           // Revert UI on error
-          btn.setAttribute('data-done', isDoneNow ? '1' : '0')
-          if (isDoneNow) { card.classList.add('disabled-card') } else { card.classList.remove('disabled-card') }
+          for (const it of items) {
+            if (parseInt(it.round||1,10) === r) it.is_done = isDoneNow
+          }
+          renderHiitRounds(items)
           setStatus('Network error')
         }
         try { window.hideLoading && window.hideLoading() } catch {}
@@ -1170,12 +1518,15 @@ function renderHiitRounds(items) {
       itemsEls.forEach(el => el.classList.remove('live'))
       li.classList.add('live')
       const gid = li.getAttribute('data-id')||''
-      if (gid) window.fitbookHiitCurrentId = gid
+      if (gid) window.homeworkoutsHiitCurrentId = gid
       setStatus(`Selected exercise ${idx+1}`)
       return
     }
   }
 }
+
+// Expose HIIT renderer for local generator paths
+try { window.renderHiitRounds = renderHiitRounds } catch {}
 
 function guessIsoSeconds(hint) {
   const m = /([0-9]{1,3})\s*s/.exec(String(hint||''))

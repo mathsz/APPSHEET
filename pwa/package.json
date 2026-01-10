@@ -1,7 +1,7 @@
 {
   "name": "pwa",
   "private": true,
-  "version": "0.541",
+  "version": "0.9.0-alpha.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,7 +19,12 @@
   },
   "dependencies": {
     "ajv-formats": "^3.0.1",
-    "firebase": "^12.7.0"
+    "firebase": "^12.7.0",
+    "lottie-web": "^5.13.0",
+    "puppeteer": "^24.34.0"
+  },
+  "vitest": {
+    "setupFiles": "./tests/setup.js"
   },
   "description": "Minimal offline-ready web app with Firebase Auth and Apps Script backend.",
   "main": "index.js",

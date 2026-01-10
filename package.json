@@ -1,0 +1,11 @@
+{
+  "name": "appsheet-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix pwa run dev",
+    "build": "npm --prefix pwa run build",
+    "preview": "npm --prefix pwa run preview",
+    "test": "npm --prefix pwa run test",
+    "validate:exercises": "npm --prefix pwa run validate:exercises"
+  }
+}

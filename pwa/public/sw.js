@@ -1,4 +1,4 @@
-const CACHE = 'fitbook-v1'
+const CACHE = 'homeworkouts-v1'
 const ASSETS = [
   '/',
   '/index.html',

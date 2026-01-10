@@ -1,4 +1,4 @@
-export const FITBOOK_CONFIG = {
+export const HOMEWORKOUTS_CONFIG = {
   firebase: {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
@@ -14,3 +14,6 @@ export const FITBOOK_CONFIG = {
     proxyBase: import.meta.env.VITE_PROXY_BASE || ''
   }
 }
+
+// Optional telemetry endpoint (POST or beacon) to receive migration pings
+HOMEWORKOUTS_CONFIG.telemetryUrl = import.meta.env.VITE_TELEMETRY_URL || ''

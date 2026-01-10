@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Fitbook — Quick Actions</title>
+  <title>Homeworkouts — Quick Actions</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:1rem}
     button, a.bookmarklet{display:block;margin:12px 0;padding:12px 16px;font-size:16px}
@@ -13,20 +13,20 @@
   </style>
 </head>
 <body>
-  <h1>Fitbook Quick Actions</h1>
+  <h1>Homeworkouts Quick Actions</h1>
   <p class="note">Open this page in Safari on the phone and tap the button you need. "Set Config" will seed the required backend values and reload the page.</p>
 
-  <button id="btn-show">Show current Fitbook config</button>
-  <button id="btn-set">Set Fitbook config (execUrl + token + proxy)</button>
-  <button id="btn-clear">Clear Fitbook config & reload</button>
+  <button id="btn-show">Show current Homeworkouts config</button>
+  <button id="btn-set">Set Homeworkouts config (execUrl + token + proxy)</button>
+  <button id="btn-clear">Clear Homeworkouts config & reload</button>
 
-  <p class="note">After tapping "Set Fitbook config", open the app URL: <a href="https://workouts-generator-abdde.web.app">workouts-generator-abdde.web.app</a></p>
+  <p class="note">After tapping "Set Homeworkouts config", open the app URL: <a href="https://workouts-generator-abdde.web.app">workouts-generator-abdde.web.app</a></p>
 
   <h2>Bookmarklets</h2>
   <p class="note">To add a bookmarklet on mobile: create a bookmark for any page, then edit its URL and paste the JavaScript code below as the URL (or long-press the link and add to bookmarks if supported).</p>
 
-  <a id="bm-default" class="bookmarklet" href="#">Set Fitbook config (one-tap)</a>
-  <a id="bm-prompt" class="bookmarklet" href="#">Set Fitbook config (prompt for values)</a>
+  <a id="bm-default" class="bookmarklet" href="#">Set Homeworkouts config (one-tap)</a>
+  <a id="bm-prompt" class="bookmarklet" href="#">Set Homeworkouts config (prompt for values)</a>
 
   <p class="small">If you prefer, copy the code below and paste it into the bookmark URL when editing a bookmark.</p>
   <pre id="bm-code" class="code"></pre>
@@ -37,10 +37,10 @@
     const PROXY = 'https://dawn-dream-8eb0.mathieuvalotaire.workers.dev/'
 
     // Default one-tap bookmarklet: sets values and navigates to the app
-    const defaultCode = "javascript:(function(){try{localStorage.setItem('fitbook_exec_url','"+EXEC+"');localStorage.setItem('fitbook_token','"+TOKEN+"');localStorage.setItem('fitbook_proxy_base','"+PROXY+"');alert('Fitbook config saved');window.location.href='https://workouts-generator-abdde.web.app';}catch(e){alert('Failed to save config: '+e)}})();"
+    const defaultCode = "javascript:(function(){try{localStorage.setItem('homeworkouts_exec_url','"+EXEC+"');localStorage.setItem('homeworkouts_token','"+TOKEN+"');localStorage.setItem('homeworkouts_proxy_base','"+PROXY+"');alert('Homeworkouts config saved');window.location.href='https://workouts-generator-abdde.web.app';}catch(e){alert('Failed to save config: '+e)}})();"
 
     // Prompt bookmarklet: asks user for each value
-    const promptCode = "javascript:(function(){try{var e=prompt('Exec URL','"+EXEC+"');if(e) localStorage.setItem('fitbook_exec_url',e);var t=prompt('Token','"+TOKEN+"');if(t) localStorage.setItem('fitbook_token',t);var p=prompt('Proxy base (optional)','"+PROXY+"');if(p) localStorage.setItem('fitbook_proxy_base',p);alert('Fitbook config saved (if provided)');window.location.href='https://workouts-generator-abdde.web.app';}catch(e){alert('Failed: '+e)}})();"
+    const promptCode = "javascript:(function(){try{var e=prompt('Exec URL','"+EXEC+"');if(e) localStorage.setItem('homeworkouts_exec_url',e);var t=prompt('Token','"+TOKEN+"');if(t) localStorage.setItem('homeworkouts_token',t);var p=prompt('Proxy base (optional)','"+PROXY+"');if(p) localStorage.setItem('homeworkouts_proxy_base',p);alert('Homeworkouts config saved (if provided)');window.location.href='https://workouts-generator-abdde.web.app';}catch(e){alert('Failed: '+e)}})();"
 
     document.getElementById('bm-default').setAttribute('href', defaultCode)
     document.getElementById('bm-prompt').setAttribute('href', promptCode)
@@ -49,17 +49,17 @@
     // Button handlers from original page
     document.getElementById('btn-show').addEventListener('click', () => {
       try {
-        alert('exec: ' + localStorage.getItem('fitbook_exec_url') + '\n' +
-              'token: ' + localStorage.getItem('fitbook_token') + '\n' +
-              'proxy: ' + localStorage.getItem('fitbook_proxy_base'))
+          alert('exec: ' + localStorage.getItem('homeworkouts_exec_url') + '\n' +
+            'token: ' + localStorage.getItem('homeworkouts_token') + '\n' +
+            'proxy: ' + localStorage.getItem('homeworkouts_proxy_base'))
       } catch(e) { alert('Unable to read localStorage') }
     })
 
     document.getElementById('btn-set').addEventListener('click', () => {
       try {
-        localStorage.setItem('fitbook_exec_url', EXEC)
-        localStorage.setItem('fitbook_token', TOKEN)
-        localStorage.setItem('fitbook_proxy_base', PROXY)
+        localStorage.setItem('homeworkouts_exec_url', EXEC)
+        localStorage.setItem('homeworkouts_token', TOKEN)
+        localStorage.setItem('homeworkouts_proxy_base', PROXY)
         alert('Config saved — reloading')
         location.reload()
       } catch(e) { alert('Failed to save config: ' + e) }
@@ -67,9 +67,9 @@
 
     document.getElementById('btn-clear').addEventListener('click', () => {
       try {
-        localStorage.removeItem('fitbook_exec_url')
-        localStorage.removeItem('fitbook_token')
-        localStorage.removeItem('fitbook_proxy_base')
+        localStorage.removeItem('homeworkouts_exec_url')
+        localStorage.removeItem('homeworkouts_token')
+        localStorage.removeItem('homeworkouts_proxy_base')
         // clear caches (best-effort)
         if (window.caches && caches.keys) {
           caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => location.reload())

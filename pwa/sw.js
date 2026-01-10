@@ -1,5 +1,5 @@
-const CACHE_NAME = 'fitbook-static-v0.1';
-const DATA_CACHE = 'fitbook-data-v0.1';
+const CACHE_NAME = 'homeworkouts-static-v0.1';
+const DATA_CACHE = 'homeworkouts-data-v0.1';
 const EXERCISES_URL = '/exercises.json';
 const VERSION_URL = '/version.json';
 

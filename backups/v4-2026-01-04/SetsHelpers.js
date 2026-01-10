@@ -391,7 +391,7 @@ function getSpreadsheetForHelpers_() {
     if (typeof getSs === 'function') return getSs();
   } catch (e) {}
 
-  // Last resort: open the known Fitbook spreadsheet.
+  // Last resort: open the known Homeworkouts spreadsheet.
   return SpreadsheetApp.openById('1o0jp22IWRGJ5siqpEbNvCd5R6t-kcXaWoPVZ0kzgFPA');
 }
 

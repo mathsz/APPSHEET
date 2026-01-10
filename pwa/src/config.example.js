@@ -1,4 +1,4 @@
-export const FITBOOK_CONFIG = {
+export const HOMEWORKOUTS_CONFIG = {
   firebase: {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",

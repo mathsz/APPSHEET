@@ -56,13 +56,16 @@ jobs:
         run: npm install -g firebase-tools
 
       - name: Deploy to Firebase Hosting (skips when secrets unset)
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT }}
         run: |
-          if [ -z "${{ secrets.FIREBASE_TOKEN }}" ] || [ -z "${{ secrets.FIREBASE_PROJECT }}" ]; then
+          if [ -z "$FIREBASE_TOKEN" ] || [ -z "$FIREBASE_PROJECT" ]; then
             echo "Skipping Firebase deploy because FIREBASE_TOKEN or FIREBASE_PROJECT is not set"
             exit 0
           fi
           npm install -g firebase-tools
-          firebase deploy --only hosting --project "${{ secrets.FIREBASE_PROJECT }}" --token "${{ secrets.FIREBASE_TOKEN }}"
+          firebase deploy --only hosting --project "$FIREBASE_PROJECT" --token "$FIREBASE_TOKEN"
 
   # Staging deployment: triggered by pushes to `staging` branch. Uses separate staging secrets
   staging-deploy:
@@ -87,27 +90,34 @@ jobs:
         run: npm --prefix pwa run build
 
       - name: "Optional: Deploy PWA to Firebase staging (skips when secrets unset)"
+        env:
+          FIREBASE_STAGING_TOKEN: ${{ secrets.FIREBASE_STAGING_TOKEN }}
+          FIREBASE_STAGING_PROJECT: ${{ secrets.FIREBASE_STAGING_PROJECT }}
         run: |
-          if [ -z "${{ secrets.FIREBASE_STAGING_TOKEN }}" ] || [ -z "${{ secrets.FIREBASE_STAGING_PROJECT }}" ]; then
+          if [ -z "$FIREBASE_STAGING_TOKEN" ] || [ -z "$FIREBASE_STAGING_PROJECT" ]; then
             echo "Skipping staging Firebase deploy because secrets are not set"
             exit 0
           fi
           npm install -g firebase-tools
-          firebase deploy --only hosting --project "${{ secrets.FIREBASE_STAGING_PROJECT }}" --token "${{ secrets.FIREBASE_STAGING_TOKEN }}"
+          firebase deploy --only hosting --project "$FIREBASE_STAGING_PROJECT" --token "$FIREBASE_STAGING_TOKEN"
 
       - name: "Optional: Deploy Apps Script to staging (skips when secrets unset)"
+        env:
+          GCP_SA_KEY_STAGING: ${{ secrets.GCP_SA_KEY_STAGING }}
+          CLASP_SCRIPT_ID_STAGING: ${{ secrets.CLASP_SCRIPT_ID_STAGING }}
         run: |
-          if [ -z "${{ secrets.GCP_SA_KEY_STAGING }}" ] || [ -z "${{ secrets.CLASP_SCRIPT_ID_STAGING }}" ]; then
+          if [ -z "$GCP_SA_KEY_STAGING" ] || [ -z "$CLASP_SCRIPT_ID_STAGING" ]; then
             echo "Skipping staging Apps Script deploy because secrets are not set"
             exit 0
           fi
           npm install -g @google/clasp
-          echo "${{ secrets.GCP_SA_KEY_STAGING }}" > sa-key.json
-          echo "{\"scriptId\": \"${{ secrets.CLASP_SCRIPT_ID_STAGING }}\"}" > .clasp.json
+          printf "%s" "$GCP_SA_KEY_STAGING" > sa-key.json
+          printf '{"scriptId":"%s"}' "$CLASP_SCRIPT_ID_STAGING" > .clasp.json
           npx clasp login --creds sa-key.json
           npx clasp push --force
           npx clasp version "Staging deploy ${GITHUB_SHA}"
-          rm -f sa-key.json
+          shred -u sa-key.json || rm -f sa-key.json
+          rm -f .clasp.json
 
   deploy-apps-script:
     name: Deploy Apps Script (optional)
@@ -126,14 +136,18 @@ jobs:
         run: npm install -g @google/clasp
 
       - name: Deploy Apps Script (skips when secrets unset)
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
         run: |
-          if [ -z "${{ secrets.GCP_SA_KEY }}" ] || [ -z "${{ secrets.CLASP_SCRIPT_ID }}" ]; then
+          if [ -z "$GCP_SA_KEY" ] || [ -z "$CLASP_SCRIPT_ID" ]; then
             echo "Skipping Apps Script deploy because GCP_SA_KEY or CLASP_SCRIPT_ID is not set"
             exit 0
           fi
-          echo "${{ secrets.GCP_SA_KEY }}" > sa-key.json
-          echo "{\"scriptId\": \"${{ secrets.CLASP_SCRIPT_ID }}\"}" > .clasp.json
+          printf "%s" "$GCP_SA_KEY" > sa-key.json
+          printf '{"scriptId":"%s"}' "$CLASP_SCRIPT_ID" > .clasp.json
           npx clasp login --creds sa-key.json
           npx clasp push --force
           npx clasp version "CI deploy ${GITHUB_SHA}"
-          rm -f sa-key.json
+          shred -u sa-key.json || rm -f sa-key.json
+          rm -f .clasp.json

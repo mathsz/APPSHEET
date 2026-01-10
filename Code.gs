@@ -1,4 +1,4 @@
-// FITBOOK - SCRIPT ULTIME (Version Validée - Fix Pilates Tags)
+// HomeWorkouts - SCRIPT ULTIME (Version Validée - Fix Pilates Tags)
 
 /* ===================== CONFIGURATION GLOBALE ===================== */
 if (typeof SHEET_DB === 'undefined') var SHEET_DB = "ExerciceDB";
@@ -538,7 +538,7 @@ function getDashboardMuscleList_() {
 
 /* ===================== MENU ===================== */
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('FITBOOK')
+  SpreadsheetApp.getUi().createMenu('HomeWorkouts')
     .addItem('⚡ GÉNÉRER LA SÉANCE', 'generateWorkout') 
     .addItem('✉️ Générer pour un email…', 'generateWorkoutPrompt')
     .addSeparator()

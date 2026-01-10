@@ -1,6 +1,6 @@
 {
-  "name": "Fitbook",
-  "short_name": "Fitbook",
+  "name": "Homeworkouts",
+  "short_name": "Homeworkouts",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#111827",
