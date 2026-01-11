@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Homeworkouts PWA</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/nosleep.js@0.12.0/dist/NoSleep.min.js"></script>
+    <script type="module" src="/src/main.js?v=0.52a"></script>
+    <script type="module">
+      import lottie from 'lottie-web'
+      window.lottie = lottie
+      // Preload a default fireworks/confetti animation (Lottie file URL)
+      window.COMPLETE_LOTTIE_URL = 'https://assets7.lottiefiles.com/packages/lf20_touohxv0.json'
+    </script>
+    <script>
+      // Register service worker only on non-local hosts to avoid dev caching issues.
+      (function() {
+        try {
+          var isLocal = ['localhost', '127.0.0.1'].indexOf(location.hostname) !== -1;
+          if ('serviceWorker' in navigator && !isLocal) {
+            navigator.serviceWorker.register('/sw.js').catch(function(){/* ignore */});
+          }
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
+  </body>
+</html>

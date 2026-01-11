@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "Single Arm Floor Press",
+    "discipline": "strength",
+    "muscles": ["shoulders", "triceps"],
+    "equipment": ["bodyweight"],
+    "Category": "core",
+    "mode": "reps",
+    "value": {"reps": 10},
+    "cues": "TRX pike to load the core dynamically from suspension; progress difficulty by angle.",
+    "video": "https://www.youtube.com/results?search_query=TRX+Pike+exercise+tutorial",
+    "tags": ["Abdos"],
+    "lastUpdated": "2026-01-07"
+  },
+  {
+    "id": 2,
+    "name": "Pallof Press",
+    "discipline": "strength",
+    "muscles": ["shoulders", "triceps"],
+    "equipment": ["bodyweight"],
+    "Category": "core",
+    "mode": "reps",
+    "value": {"reps": 10},
+    "cues": "Straight-arm crunch for upper ab engagement with hands extended.",
+    "video": "https://www.youtube.com/results?search_query=Straight-arm+Crunch+exercise+tutorial",
+    "tags": ["Abdos"],
+    "lastUpdated": "2026-01-07"
+  },
+  {
+    "id": 3,
+    "name": "Straight-Arm Crunch",
+    "discipline": "strength",
+    "muscles": ["core"],
+    "equipment": ["bodyweight"],
+    "Category": "core",
+    "mode": "reps",
+    "value": {"reps": 10},
+    "cues": "Hands-to-knees crunch variation focusing on upper abs and hip flexion.",
+    "video": "https://www.youtube.com/results?search_query=Knee+Reach+Crunch+exercise+tutorial",
+    "tags": ["Abdos"],
+    "lastUpdated": "2026-01-07"
+  },
+  {
+    "id": 4,
+    "name": "Trx Pike",
+    "discipline": "strength",
+    "muscles": ["shoulders"],
+    "equipment": ["trx"],
+    "Category": "core",
+    "mode": "reps",
+    "value": {"reps": 10},
+    "cues": "Controlled leg lowering to target lower abs; bend knees to regress.",
+    "video": "https://www.youtube.com/results?search_query=Leg+Lowering+exercise+tutorial",
+    "tags": ["Abdos(Bas)"],
+    "lastUpdated": "2026-01-07"
+  },
+  {
+    "id": 5,
+    "name": "Knee Reach Crunch",
+    "discipline": "strength",
+    "muscles": ["core"],
+    "equipment": ["bodyweight"],
+    "Category": "core",
+    "mode": "reps",
+    "value": {"reps": 10},
+    "cues": "Hands-to-knees crunch variation focusing on upper abs and hip flexion.",
+    "video": "https://www.youtube.com/results?search_query=Knee+Reach+Crunch+exercise+tutorial",
+    "tags": ["Abdos"],
+    "lastUpdated": "2026-01-07"
+  }
+]

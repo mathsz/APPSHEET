@@ -1,0 +1,54 @@
+name: Deploy Apps Script (protected)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+# This workflow is a manual, protected deploy for Apps Script.
+# It requires the repository to have the following secrets set:
+# - GCP_SA_KEY
+# - CLASP_SCRIPT_ID
+# It is intended to be run manually and should be attached to a protected environment (e.g., "production").
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+            node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Validate secrets and deploy
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+        run: |
+          if [ -z "${GCP_SA_KEY}" ] || [ -z "${CLASP_SCRIPT_ID}" ]; then
+            echo "Required deploy secrets (GCP_SA_KEY, CLASP_SCRIPT_ID) are not set. Aborting." >&2
+            exit 1
+          fi
+          echo "Secrets present — proceeding with Apps Script deploy"
+
+          # Write the service account key and .clasp.json (kept local to runner)
+          printf "%s" "${GCP_SA_KEY}" > sa-key.json
+          echo "{\"scriptId\": \"${CLASP_SCRIPT_ID}\"}" > .clasp.json
+
+          # Login and push
+          npx clasp login --creds sa-key.json
+          npx clasp push --force
+          npx clasp version "Protected deploy $(date -u +%Y%m%dT%H%M%SZ)"
+
+          # Cleanup
+          shred -u sa-key.json || rm -f sa-key.json
+          rm -f .clasp.json

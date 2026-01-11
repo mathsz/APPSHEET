@@ -1,0 +1,294 @@
+#user-email { display: none !important; }
+.alias-banner { display: none !important; }
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: #ffffff;
+  background-color: #000000;
+
+  /* Theme variables */
+  --done-green: #22c55e;
+  --done-green-rgb: 34, 197, 94;
+  --done-bg: #3B518C;
+  --done-text: #ffffff;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #8aa2ff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #a5b6ff;
+}
+
+body {
+  margin: 0;
+  display: block;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #000000;
+  color: #ffffff;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+#app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+
+header { display: flex; justify-content: space-between; align-items: center; background: #000000; flex-wrap: wrap; gap: 0.5rem; }
+
+/* Inline header navigation; hamburger/sidebar removed */
+@media (max-width: 640px) {
+  header { flex-direction: column; align-items: flex-start; }
+}
+.alias-banner { text-align: center; margin: 0.5rem auto; padding: 0.3rem 0.6rem; max-width: 640px; }
+.alias-banner button { margin-left: 0.5rem; }
+header h1 { font-size: 1.8rem; margin: 0; color: #ffffff; }
+/* header user-info removed; auth controls moved into Setup view */
+.hidden { display: none; }
+
+/* Smooth view transitions (slide) */
+main { position: relative; }
+.view { will-change: transform, opacity; }
+.view.view-enter { transform: translateX(24px); opacity: 0; }
+.view.view-enter.view-enter-active { transform: translateX(0); opacity: 1; transition: transform 240ms ease, opacity 240ms ease; }
+.view.view-exit { transform: translateX(0); opacity: 1; }
+.view.view-exit.view-exit-active { transform: translateX(-24px); opacity: 0; transition: transform 240ms ease, opacity 240ms ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .view.view-enter.view-enter-active,
+  .view.view-exit.view-exit-active { transition: none; }
+  .view.view-enter,
+  .view.view-exit { transform: none; opacity: 1; }
+}
+nav { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+nav { display: flex; gap: 0.5rem; }
+nav button { background: #111111; color: #ffffff; border: 1px solid #333333; padding: 0.35rem 0.6rem; font-size: 0.95rem; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+
+.workout-actions { display:flex; justify-content:center; align-items:center; gap:0.75rem; margin-top:1rem }
+.workout-actions button { padding: 0.6rem 1rem; border-radius: 8px; background: #2563eb; color: #fff; border: 1px solid rgba(0,0,0,0.1); font-weight:600 }
+.workout-actions .secondary { background: transparent; color: inherit; border: 1px solid #ddd }
+.queue-indicator { margin-left: 0.75rem; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.04); color: #cbd5e1; padding: 0.35rem 0.6rem; border-radius: 8px; font-size: 0.9rem; }
+.queue-indicator.hidden { display: none }
+#queue-count { font-weight: 700; color: var(--done-green); margin-right: 0.25rem; }
+
+.cards#setup-profile { display: block; }
+#profile-card { padding: 0.6rem; display: inline-block; }
+
+/* Workout Complete splash */
+#complete-modal { position: fixed; inset: 0; background: rgba(3,7,18,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+#complete-modal.hidden { display: none }
+#complete-modal .card { background: transparent; border: none; text-align: center; color: white }
+#complete-modal .progress { margin-top: 1rem; font-size: 1.1rem }
+#complete-modal .progress-bar { width: 300px; height: 12px; background: rgba(255,255,255,0.12); border-radius: 8px; margin: 10px auto }
+#complete-modal .progress-bar .fill { height: 100%; width: 0%; background: linear-gradient(90deg,#ff7a18,#af002d); border-radius: 8px; transition: width 300ms }
+#complete-modal .close { margin-top: 1rem; padding: 0.4rem 0.8rem; border-radius: 6px; background: white; color: #111; border: none }
+
+.alias-row { display: inline-flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
+.alias-row input { padding: 0.4rem 0.5rem; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; min-width: 160px; }
+.card { padding: 1rem; border-radius: 12px; background: #0b0b0b; border: 1px solid rgba(255,255,255,0.12); }
+.card { overflow: hidden; }
+.card .row { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.card .muted { opacity: 0.75; font-size: 0.9rem; color: #cccccc; }
+.tiny { font-size: 0.82rem; }
+.status { margin-top: 1rem; opacity: 0.9; color: #cccccc; }
+/* Current exercise highlight */
+.card.current-exercise { background: #e5e7eb; color: #000000; border-color: #cbd5e1; }
+.card.current-exercise .muted { color: #000000; opacity: 0.8; }
+.card.current-exercise strong { font-size: 1.15rem; }
+/* Disabled card state for HIIT equipment */
+.card.disabled-card { background: #2b2f3a; border-color: #5b6675; opacity: 0.75; filter: grayscale(70%) brightness(0.92); }
+.card.disabled-card .muted { color: #b0b7c3; }
+
+/* Completed exercise (Strength) - light grey card with dark text */
+.card.done-exercise { background: var(--done-bg); color: var(--done-text); border-color: #d1d9e3; }
+.card.done-exercise .muted { color: var(--done-text); opacity: 0.85; }
+.card.done-exercise strong { color: var(--done-text); }
+/* Green circular done indicator shown next to exercise names */
+.done-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--done-green); margin-right: 0.6rem; vertical-align: middle; opacity: 0; transform: scale(0.85); transition: opacity 160ms ease, transform 160ms ease; }
+.done-dot.done { opacity: 1; transform: scale(1); }
+
+/* HIIT round "DONE" should look like a completed card (blue) */
+.hiit-round.disabled-card { background: var(--done-bg); border-color: #d1d9e3; color: var(--done-text); }
+.hiit-round.disabled-card .muted { color: var(--done-text); opacity: 0.85; }
+
+.settings-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; max-width: 720px; }
+.settings-grid label { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 0.75rem; }
+.settings-grid input { padding: 0.5rem; border-radius: 8px; border: 1px solid #333333; background: #111111; color: #ffffff; }
+.card select { padding: 0.5rem; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; width: 100%; box-sizing: border-box; }
+.settings-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #111827; color: #fff; padding: 0.6rem 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); opacity: 0; transition: opacity 200ms ease-in; }
+.toast.show { opacity: 1; }
+
+/* Fullscreen loading overlay */
+.loading { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.75rem; z-index: 9999; }
+.loading.hidden { display: none; }
+.spinner { width: 42px; height: 42px; border: 4px solid #333; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.9s linear infinite; }
+.loading-text { color: #ffffff; font-weight: 600; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.vanilla:hover {
+  filter: drop-shadow(0 0 2em #f7df1eaa);
+}
+
+.card {
+  padding: 2em;
+  position: relative;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid #333333;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #111111;
+  color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.2s;
+}
+button:hover {
+  border-color: #3b82f6;
+  background-color: #151515;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+/* Force dark theme; remove light-mode overrides */
+
+.sets { margin-top: 0.75rem; }
+.set-row { display: grid; grid-template-columns: 64px 1fr 1fr; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+.set-row label { color: #a3a3a3; }
+.set-row input { padding: 0.5rem; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; width: 100%; box-sizing: border-box; }
+.set-row-actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; grid-column: 2 / 4; justify-content: space-between; }
+.set-row-actions .done-check { margin-right: auto; }
+.set-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.card .set-actions { position: static; top: auto; left: auto; margin-top: 0.4rem; }
+
+/* Done button styling */
+.btn-save-sets { padding: 0.45rem 0.8rem; border-radius: 999px; font-size: 0.95rem; background: #111; color: #fff; border: 1px solid #333; }
+.card.done-exercise .btn-save-sets { background: var(--done-bg); color: var(--done-text); border-color: #cfcfcf; }
+.timer { margin-top: 0.5rem; font-size: 1.4rem; font-weight: 600; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); padding: 0.4rem 0.6rem; border-radius: 8px; text-align: center; }
+.icon-shuffle { display: inline-block; margin-right: 0.3rem; }
+/* Equipment selector (checkbox chips) */
+.equip-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.equip-chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.6rem; border: 1px solid #333; border-radius: 999px; background: #111; color: #fff; }
+.equip-chip input { accent-color: #3b82f6; }
+/* Disabled equipment when HIIT/Tabata selected */
+.equip-group.disabled { opacity: 0.75; pointer-events: none; background: #2a2e37; border: 1px dashed #4a4f57; padding: 0.6rem; border-radius: 12px; filter: grayscale(80%) brightness(0.9); }
+.equip-group.disabled .equip-chip { background: #2a2e37; border-color: #4a4f57; color: #c3cad6; }
+.equip-group.disabled .equip-chip input { opacity: 0.35; }
+/* Done checkbox */
+.done-check { display: inline-flex; align-items: center; gap: 0.4rem; }
+.done-check input { accent-color: #3b82f6; }
+
+.bar { width: 100%; height: 10px; background: #111; border-radius: 6px; overflow: hidden; border: 1px solid #333; }
+.bar-fill { height: 100%; background: #3b82f6; }
+
+/* Fatigue actions */
+.fatigue-actions { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0 0.75rem 0; }
+.fatigue-actions button.active { background: #0f172a; border-color: #3b82f6; }
+
+/* Calendar view (blue) */
+.calendar { display: grid; gap: 0.6rem; }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.calendar-title { font-weight: 700; }
+.calendar-frame { background: #0f172a; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.75rem; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; }
+.calendar-weekday { opacity: 0.85; color: #cbd5e1; font-size: 0.85rem; text-align: center; padding: 0.25rem 0; }
+.cal-day { aspect-ratio: 1 / 1; display: grid; place-items: center; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: #ffffff; background: rgba(255,255,255,0.04); }
+.cal-day.muted { opacity: 0.35; }
+.cal-day.workout {
+  border-color: var(--done-green);
+  background: rgba(var(--done-green-rgb), 0.22);
+  box-shadow: 0 0 0 2px rgba(var(--done-green-rgb), 0.18) inset;
+}
+.cal-day.today { border-color: #3b82f6; }
+
+/* 2-second splash */
+.splash { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 10001; }
+.splash.hidden { display: none; }
+.splash-card { max-width: 520px; text-align: center; background: #0b0b0b; border: 1px solid rgba(255,255,255,0.12); }
+.splash-title { font-size: 1.15rem; font-weight: 700; }
+.splash-sub { margin-top: 0.6rem; opacity: 0.85; color: #cbd5e1; }
+
+/* Navigation active styling (optional) */
+nav button.active { background: #0f172a; border-color: #3b82f6; }
+
+/* List mode tweaks for mobile */
+.cards.list-mode { grid-template-columns: 1fr; }
+.card-list-item { cursor: pointer; }
+.card-list-item.current-exercise { background: #e5e7eb; color: #000000; border-color: #cbd5e1; }
+.card-list-item.current-exercise .muted { color: #000000; opacity: 0.8; }
+.btn-back { background: #111111; color: #ffffff; border: 1px solid #333333; }
+
+/* HIIT rounds grouping */
+.hiit-ex-list { list-style: none; padding: 0; margin-top: 0.5rem; }
+.hiit-ex { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.6rem 0.6rem; margin: 0.2rem 0; border-radius: 8px; cursor: pointer; line-height: 1.4; }
+.hiit-ex.live { background: #e5e7eb; color: #000000; }
+.hiit-round.disabled-card { background: var(--done-bg); border-color: #d1d9e3; color: var(--done-text); }
+.hiit-ex .ex-name { flex: 1 1 auto; }
+.hiit-ex .ex-link { flex: 0 0 auto; color: #8aa2ff; }
+.hiit-ex .ex-link:hover { color: #a5b6ff; }
+/* Responsive tweaks: stack header on small screens */
+@media (max-width: 640px) {
+  header h1 { flex: 1 1 100%; }
+  nav { flex: 1 1 100%; }
+  /* header user-info removed */
+  
+  /* Setup: position auth controls at bottom-right */
+  #view-setup { position: relative; }
+  /* Place sign-in much lower and aligned left on mobile; reserve extra bottom space so it doesn't overlap content */
+  main { padding-bottom: 360px; }
+  #setup-user-info { position: fixed; left: 12px; right: auto; bottom: 18px; display: flex; gap: 0.5rem; align-items: center; max-width: calc(100% - 28px); justify-content: flex-start; z-index: 9999; }
+  #setup-user-info button { padding: 0.35rem 0.6rem; font-size: 0.9rem; }
+  /* Bottom alias input and layout */
+  .setup-user-info { background: rgba(11,11,11,0.9); border: 1px solid rgba(255,255,255,0.06); padding: 0.6rem; border-radius: 12px; }
+  .setup-user-row { display: flex; gap: 0.5rem; align-items: center; }
+  .setup-email { display: flex; flex-direction: column; margin-right: 0.5rem; }
+  .setup-email-label { font-size: 0.85rem; color: #cdd6e0; margin-bottom: 0.15rem }
+  .setup-email-value { font-size: 0.95rem; color: #ffffff }
+  #setup-alias-bottom { padding: 0.45rem 0.6rem; border-radius: 10px; border: 1px solid #2b2b2b; background: #0f1113; color: #fff; min-width: 160px }
+  #btn-save-alias-bottom { padding: 0.45rem 0.8rem; border-radius: 10px }
+}
+/* Exercise image preview */
+.ex-img { display: block; max-width: 100%; border-radius: 8px; border: 1px solid #333; margin-top: 0.4rem; }
+
+/* Confirmation modal */
+.modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 10000 }
+.modal.hidden { display: none }
+.modal-content { background: #0b0b0b; border: 1px solid rgba(255,255,255,0.06); padding: 1rem 1.2rem; border-radius: 12px; width: 90%; max-width: 420px; text-align: left }
+.modal-content h3 { margin:0 0 0.5rem 0 }
+.modal-actions { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.75rem }
+.modal-actions button { padding:0.5rem 0.8rem; border-radius:8px }
+.modal-actions .secondary { background:transparent; border:1px solid #333; color:#fff }
+

@@ -1,0 +1,10 @@
+{
+  "canonicalOrder": [
+    "Bodyweight",
+    "Bench",
+    "Dumbbells",
+    "Kettlebell",
+    "Band"
+  ],
+  "notes": "Do not change these names or order."
+}

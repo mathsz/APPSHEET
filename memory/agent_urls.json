@@ -1,0 +1,13 @@
+{
+  "updated_at": "2026-01-02",
+  "apps_script": {
+    "deployment_id": "AKfycbyb6d6YBVgn1awJ7W",
+    "exec_url": "https://script.google.com/macros/s/AKfycbyb6d6YBVgn1awJ7W/exec"
+  },
+  "proxy": {
+    "cloudflare_worker_base_url": "https://snowy-union-763c.mathieuvalotaire.workers.dev/"
+  },
+  "appsheet": {
+    "preferred_webhook_url": "https://snowy-union-763c.mathieuvalotaire.workers.dev/"
+  }
+}

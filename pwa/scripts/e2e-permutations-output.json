@@ -1,0 +1,182 @@
+[
+  {
+    "equipment": "TRX",
+    "program": "Strength",
+    "duration": "10",
+    "saved": "Saved: 1/7/2026, 7:44:17 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | YouTube"
+  },
+  {
+    "equipment": "TRX",
+    "program": "Strength",
+    "duration": "20",
+    "saved": "Saved: 1/7/2026, 7:44:19 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | YouTube"
+  },
+  {
+    "equipment": "TRX",
+    "program": "Strength",
+    "duration": "30",
+    "saved": "Saved: 1/7/2026, 7:44:21 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "Kettlebell Curl | Exercice 1 • biceps | YouTube"
+  },
+  {
+    "equipment": "TRX",
+    "program": "HIIT",
+    "duration": "10",
+    "saved": "Saved: 1/7/2026, 7:44:22 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | Done 🔀 Swap"
+  },
+  {
+    "equipment": "TRX",
+    "program": "HIIT",
+    "duration": "20",
+    "saved": "Saved: 1/7/2026, 7:44:24 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Curl | Exercice 1 • biceps | Done 🔀 Swap"
+  },
+  {
+    "equipment": "TRX",
+    "program": "HIIT",
+    "duration": "30",
+    "saved": "Saved: 1/7/2026, 7:44:26 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "One Arm Kettlebell Row | Exercice 1 • back | Done 🔀 Swap"
+  },
+  {
+    "equipment": "Dumbbell",
+    "program": "Strength",
+    "duration": "10",
+    "saved": "Saved: 1/7/2026, 7:44:28 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | YouTube"
+  },
+  {
+    "equipment": "Dumbbell",
+    "program": "Strength",
+    "duration": "20",
+    "saved": "Saved: 1/7/2026, 7:44:30 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "Dumbbell Hammer Curl | Exercice 1 • biceps | YouTube"
+  },
+  {
+    "equipment": "Dumbbell",
+    "program": "Strength",
+    "duration": "30",
+    "saved": "Saved: 1/7/2026, 7:44:32 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "One Arm Kettlebell Row | Exercice 1 • back | YouTube"
+  },
+  {
+    "equipment": "Dumbbell",
+    "program": "HIIT",
+    "duration": "10",
+    "saved": "Saved: 1/7/2026, 7:44:34 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | Done 🔀 Swap"
+  },
+  {
+    "equipment": "Dumbbell",
+    "program": "HIIT",
+    "duration": "20",
+    "saved": "Saved: 1/7/2026, 7:44:35 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "One Arm Kettlebell Row | Exercice 1 • back | Done 🔀 Swap"
+  },
+  {
+    "equipment": "Dumbbell",
+    "program": "HIIT",
+    "duration": "30",
+    "saved": "Saved: 1/7/2026, 7:44:37 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | Done 🔀 Swap"
+  },
+  {
+    "equipment": "Kettlebell",
+    "program": "Strength",
+    "duration": "10",
+    "saved": "Saved: 1/7/2026, 7:44:39 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "One Arm Kettlebell Row | Exercice 1 • back | YouTube"
+  },
+  {
+    "equipment": "Kettlebell",
+    "program": "Strength",
+    "duration": "20",
+    "saved": "Saved: 1/7/2026, 7:44:41 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "One Arm Kettlebell Row | Exercice 1 • back | YouTube"
+  },
+  {
+    "equipment": "Kettlebell",
+    "program": "Strength",
+    "duration": "30",
+    "saved": "Saved: 1/7/2026, 7:44:43 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 66,
+    "sample": "One Arm Kettlebell Row | Exercice 1 • back | YouTube"
+  },
+  {
+    "equipment": "Kettlebell",
+    "program": "HIIT",
+    "duration": "10",
+    "saved": "Saved: 1/7/2026, 7:44:45 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Curl | Exercice 1 • biceps | Done 🔀 Swap"
+  },
+  {
+    "equipment": "Kettlebell",
+    "program": "HIIT",
+    "duration": "20",
+    "saved": "Saved: 1/7/2026, 7:44:47 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Curl | Exercice 1 • biceps | Done 🔀 Swap"
+  },
+  {
+    "equipment": "Kettlebell",
+    "program": "HIIT",
+    "duration": "30",
+    "saved": "Saved: 1/7/2026, 7:44:48 AM",
+    "status": "Generated locally. Press \"Workout complete\" to save to Sheets.",
+    "globalStatus": "",
+    "count": 69,
+    "sample": "Kettlebell Deadlift | Exercice 1 • glutes | Done 🔀 Swap"
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "UserProfile": {
+    "columns": {
+      "DUREE": "H"
+    },
+    "notes": "Durée (minutes) is stored in column H under the key DUREE in UserProfile. Prefer sending 'DUREE' and 'Durée' params from the client to ensure persistence."
+  }
+}

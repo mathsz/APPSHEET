@@ -14,19 +14,17 @@
         -webkit-text-size-adjust: 100%;
         touch-action: manipulation;
         box-sizing: border-box;
-        background: #000;
-        color: #fff;
+        background: #fff;
       }
       *, *::before, *::after { box-sizing: inherit; }
 
       .listPanel {
         width: 100%;
-        border: 1px solid #333;
+        border: 1px solid #ddd;
         border-radius: 10px;
         padding: 12px;
         max-height: 240px;
         overflow: auto;
-        background: #0b0b0b;
       }
 
       .listTitle {
@@ -56,11 +54,10 @@
       }
 
       .video {
-        border: 1px solid #333;
+        border: 1px solid #ddd;
         border-radius: 10px;
         padding: 12px;
         width: 100%;
-        background: #0b0b0b;
       }
 
       .videoTitle {
@@ -74,7 +71,7 @@
         aspect-ratio: 16 / 9;
         border-radius: 10px;
         overflow: hidden;
-        background: #000;
+        background: #fff;
       }
 
       .ytWrap iframe {
@@ -95,8 +92,8 @@
         margin: 0 auto;
       }
 
-      h1 { font-size: clamp(22px, 6vw, 34px); margin: 0; text-align: center; color: #fff; }
-      .label { color: #ccc; font-size: clamp(16px, 4.5vw, 22px); margin: 0; text-align: center; }
+      h1 { font-size: clamp(22px, 6vw, 34px); margin: 0; text-align: center; }
+      .label { color: #555; font-size: clamp(16px, 4.5vw, 22px); margin: 0; text-align: center; }
       .time {
         font-size: clamp(96px, 18vw, 200px);
         font-weight: 800;
@@ -104,7 +101,6 @@
         margin: 6px 0 6px;
         text-align: center;
         line-height: 1;
-        color: #fff;
       }
       .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; justify-content: center; width: 100%; }
       button {
@@ -114,15 +110,9 @@
         cursor: pointer;
         border-radius: 10px;
         flex: 1 1 140px;
-        background: #111;
-        color: #fff;
-        border: 1px solid #333;
       }
-      .muted { color: #ccc; font-size: 13px; margin-top: 14px; line-height: 1.35; }
+      .muted { color: #777; font-size: 13px; margin-top: 14px; line-height: 1.35; }
       .muted code { font-size: 0.95em; }
-      /* Grey-out style similar to disabled equipment */
-      .setDone .listPanel, .setDone .video, .setDone .row, .setDone .ytWrap { background: #1a1a1a; border-color: #333; }
-      .setDone { opacity: 0.72; pointer-events: none; }
 
       @media (max-width: 420px) {
         .row { gap: 10px; }
@@ -152,7 +142,6 @@
         <button id="prev">Prev</button>
         <button id="toggleDone">Done</button>
         <button id="next">Next</button>
-        <button id="doneSet">Done Set</button>
       </div>
 
       <section class="video" id="videoPanel" style="display:none;">
@@ -209,7 +198,6 @@
       const exerciseListEl = document.getElementById('exerciseList');
       const videoPanelEl = document.getElementById('videoPanel');
       const mediaLinkEl = document.getElementById('mediaLink');
-      const containerEl = document.querySelector('.container');
 
       // Optional: illustration image (gif/png/jpg/webp) instead of YouTube.
       // If you put a direct image URL into Glide_HIIT.Video_URL, it will show here.
@@ -400,10 +388,6 @@
         const u = String(url || '').trim().toLowerCase();
         return u.endsWith('.gif') || u.endsWith('.png') || u.endsWith('.jpg') || u.endsWith('.jpeg') || u.endsWith('.webp');
       }
-      function isYouTubeUrl_(url) {
-        const u = String(url || '').trim().toLowerCase();
-        return !!u && (u.includes('youtube.com') || u.includes('youtu.be'));
-      }
       function updateVideo_() {
         const item = currentHiitItem();
         const q = item && item.exercise ? String(item.exercise) : '';
@@ -462,60 +446,9 @@
           const div = document.createElement('div');
           div.className = 'listItem' + (i === hiit.idx ? ' current' : '') + (i === hiit.idx + 1 ? ' next' : '');
           const doneMark = it && it.isDone ? '✓ ' : '';
-          const nameText = `${doneMark}${i + 1}. ${it && it.exercise ? it.exercise : ''}`;
-          const nameSpan = document.createElement('span');
-          nameSpan.textContent = nameText;
-          div.appendChild(nameSpan);
-          const rawUrl = it && it.videoUrl ? String(it.videoUrl).trim() : '';
-          if (rawUrl) {
-            const a = document.createElement('a');
-            a.href = rawUrl;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.textContent = ' ↗';
-            a.style.marginLeft = '6px';
-            a.style.fontSize = '12px';
-            a.style.opacity = '0.85';
-            div.appendChild(a);
-          }
-          // Allow clicking list items to jump to that exercise.
-          div.style.cursor = 'pointer';
-          div.addEventListener('click', () => {
-            const wasRunning = !!hiit.running;
-            stop();
-            hiit.running = wasRunning;
-            jumpToHiitIndex(i);
-            if (wasRunning) startHiit();
-          });
+          div.textContent = `${doneMark}${i + 1}. ${it && it.exercise ? it.exercise : ''}`;
           exerciseListEl.appendChild(div);
         }
-      }
-      function markAllDone_() {
-        if (!userEmail) return;
-        const canRun = typeof google !== 'undefined' && google.script && google.script.run;
-        if (!canRun) return;
-        const items = (hiit.items || []).slice();
-        if (!items.length) return;
-        let pending = 0;
-        const finalize = () => {
-          try { containerEl && containerEl.classList.add('setDone'); } catch (e) {}
-          renderList_();
-          setDoneButtonLabel();
-        };
-        items.forEach((it) => {
-          if (!it || !Number.isFinite(it.order)) return;
-          pending++;
-          google.script.run
-            .withSuccessHandler((res) => {
-              if (res && res.status === 'ok') it.isDone = true;
-              if (--pending === 0) finalize();
-            })
-            .withFailureHandler(() => {
-              if (--pending === 0) finalize();
-            })
-            .setHiitIsDone(userEmail, it.order, true);
-        });
-        if (pending === 0) finalize();
       }
 
       function markCurrentDone_(desired) {
@@ -602,23 +535,22 @@
         if (hiit.phase === 'work') {
           // Auto-mark done when a WORK interval finishes.
           markCurrentDone_(true);
-          // Always transition to REST, even for the last exercise.
+
+          const isLast = hiit.idx >= hiit.items.length - 1;
+          if (isLast) {
+            stopHiit();
+            titleEl.textContent = 'Terminé';
+            subtitleEl.textContent = `${hiit.items.length}/${hiit.items.length}`;
+            comingNextEl.textContent = '';
+            timeEl.textContent = '00:00';
+            tripleBeep();
+            return;
+          }
+
           hiit.phase = 'rest';
           hiit.phaseRemaining = Number.isFinite(item.rest_s) && item.rest_s > 0 ? item.rest_s : 20;
           hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
           renderHiit();
-          return;
-        }
-
-        // REST finished: if we were on the last exercise, end the workout. Otherwise advance.
-        const wasLast = hiit.idx >= hiit.items.length - 1;
-        if (wasLast) {
-          stopHiit();
-          titleEl.textContent = 'Terminé';
-          subtitleEl.textContent = `${hiit.items.length}/${hiit.items.length}`;
-          comingNextEl.textContent = '';
-          timeEl.textContent = '00:00';
-          tripleBeep();
           return;
         }
 
@@ -629,8 +561,6 @@
         hiit.endAt = Date.now() + hiit.phaseRemaining * 1000;
         updateVideo_();
         renderHiit();
-        // Ensure we continue running after transitions.
-        hiit.running = true;
       }
 
       function startHiit() {
@@ -661,7 +591,7 @@
             nextHiitPhaseOrExercise();
             if (!hiit.running) stop();
           }
-        }, 100);
+        }, 200);
       }
 
       function jumpToHiitIndex(newIdx) {
@@ -699,10 +629,9 @@
           .setHiitIsDone(userEmail, item.order, newVal);
       }
 
-      document.getElementById('start').addEventListener('click', () => {
-        // Start immediately; prime audio asynchronously so UI isn't blocked by audio permission checks
+      document.getElementById('start').addEventListener('click', async () => {
+        await primeAudio();
         startHiit();
-        primeAudio();
       });
       document.getElementById('pause').addEventListener('click', stopHiit);
       document.getElementById('reset').addEventListener('click', () => {
@@ -728,7 +657,6 @@
       });
 
       toggleDoneBtn.addEventListener('click', toggleHiitDone);
-      document.getElementById('doneSet').addEventListener('click', markAllDone_);
 
       // Load HIIT list
       (function init() {
