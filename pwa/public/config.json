@@ -1,0 +1,14 @@
+{
+  "execUrl": "https://script.google.com/macros/s/AKfycbx9cXgDDbGGnNWRhwfOce4zr7iRxSNenebNqvffOHBj1ki929mK6WOAGXVWXlvoOmIWkg/exec",
+  "token": "TEMP_CREATE_SETS_TOKEN_20260101",
+  "proxyBase": "https://dawn-dream-8eb0.mathieuvalotaire.workers.dev/",
+  "firebase": {
+    "apiKey": "AIzaSyDSP0t1DdI30ttlPpzJIpsGA3GM4ibpdUI",
+    "authDomain": "workouts-generator-abdde.firebaseapp.com",
+    "projectId": "workouts-generator-abdde",
+    "storageBucket": "workouts-generator-abdde.firebasestorage.app",
+    "messagingSenderId": "660272571716",
+    "appId": "1:660272571716:web:dd577a5699499f440fe311",
+    "measurementId": "G-DJXSVF8BEH"
+  }
+}
