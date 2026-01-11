@@ -1311,58 +1311,58 @@ function renderHiitRounds(items) {
       <div class=\"timer\"><span class=\"mm\">00</span>:<span class=\"ss\">00</span></div>
     </div>`;
   }).join('')
-  // Inject Workout Complete button if all rounds are done
-  const allDone = rounds.length > 0 && rounds.every(rn => byRound[rn].every(it => it.is_done === true))
+  // Inject Workout Complete button (always visible for HIIT)
   const parent = list.parentElement
   if (parent) {
     const existing = parent.querySelector('.workout-actions')
     if (existing) existing.remove()
-    if (allDone) {
-      parent.insertAdjacentHTML('beforeend', '<div class="workout-actions"><button id="btn-workout-complete">Workout complete</button></div>')
 
-      // HIIT completion: local-first enqueue + show splash.
-      try {
-        const btn = parent.querySelector('#btn-workout-complete')
-        if (btn) {
-          btn.onclick = async () => {
-            try {
-              const email = (document.getElementById('user-email')?.textContent || localStorage.getItem('homeworkouts_user_email') || '').trim()
-              const hiitItems = window.hiitItems || items || []
-              const batch = { email, items: [] }
-              for (const it of hiitItems) {
-                const gid = it.id || ''
-                if (!gid) continue
-                batch.items.push({ glideId: gid, is_done: true, sets: [] })
-              }
-              if (batch.items.length) enqueueBatch(batch)
+    parent.insertAdjacentHTML('beforeend', '<div class="workout-actions"><button id="btn-workout-complete">Workout complete</button></div>')
 
-              // Append local history so calendar shows this day as a workout day.
-              try {
-                const histItems = hiitItems.map(it => {
-                  const mg = String(it.muscles || '').trim()
-                  const firstMuscle = mg.split(',')[0] || ''
-                  return {
-                    exercise: it.exercise || '',
-                    muscleGroup: mg,
-                    muscle: firstMuscle,
-                    setCount: 1,
-                    fatigueStr: ''
-                  }
-                })
-                appendWorkoutHistory(email, histItems, new Date(), 'complete')
-              } catch (e) { console.warn('HIIT history append failed', e) }
-
-              setStatus('Workout complete — saved locally')
-              // Always show completion splash; in offline mode it shows queued status.
-              try { window.showCompleteAndFlush && window.showCompleteAndFlush() } catch (e) { console.warn('complete splash failed', e) }
-            } catch (e) {
-              console.error('HIIT complete failed', e)
-              setStatus('Workout complete failed')
+    // HIIT completion: local-first enqueue + show splash.
+    try {
+      const btn = parent.querySelector('#btn-workout-complete')
+      if (btn) {
+        btn.type = 'button'
+        btn.onclick = async (ev) => {
+          try { ev?.preventDefault?.() } catch {}
+          try {
+            const email = (document.getElementById('user-email')?.textContent || localStorage.getItem('homeworkouts_user_email') || '').trim()
+            const hiitItems = window.hiitItems || items || []
+            const batch = { email, items: [] }
+            for (const it of hiitItems) {
+              const gid = it.id || ''
+              if (!gid) continue
+              batch.items.push({ glideId: gid, is_done: true, sets: [] })
             }
+            if (batch.items.length) enqueueBatch(batch)
+
+            // Append local history so calendar shows this day as a workout day.
+            try {
+              const histItems = hiitItems.map(it => {
+                const mg = String(it.muscles || '').trim()
+                const firstMuscle = mg.split(',')[0] || ''
+                return {
+                  exercise: it.exercise || '',
+                  muscleGroup: mg,
+                  muscle: firstMuscle,
+                  setCount: 1,
+                  fatigueStr: ''
+                }
+              })
+              appendWorkoutHistory(email, histItems, new Date(), 'complete')
+            } catch (e) { console.warn('HIIT history append failed', e) }
+
+            setStatus('Workout complete — saved locally')
+            // Always show completion splash; in offline mode it shows queued status.
+            try { window.showCompleteAndFlush && window.showCompleteAndFlush() } catch (e) { console.warn('complete splash failed', e) }
+          } catch (e) {
+            console.error('HIIT complete failed', e)
+            setStatus('Workout complete failed')
           }
         }
-      } catch {}
-    }
+      }
+    } catch {}
   }
 
   let seqState = { running: false, round: null, idx: 0, phase: 'work', work: 40, rest: 20, selectedIdx: null }
