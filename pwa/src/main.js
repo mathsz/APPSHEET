@@ -4,6 +4,7 @@ function escapeHtml(str) {
 }
 import './style.css'
 import { initAuth } from './auth.js'
+import { HOMEWORKOUTS_CONFIG } from './config.js'
 import { enableWakeLock, releaseWakeLock } from './wakelock.js'
 import { getSettingString, getSettingInt, setSetting, runSettingsMigrationOnce } from './settings.js'
 import { classifyFatigue, computeMuscleFatigueMap, getDashboardMuscleList, loadHistory, makeHistorySummaryBlock, normalizeMuscleKeyTitle, pickSuggestedMuscle } from './fatigue.js'
@@ -30,7 +31,7 @@ const setStatus = (msg) => {
   } catch (e) { /* ignore */ }
 }
 
-(async function(){
+const configReady = (async function(){
   // Ensure legacy keys are migrated early so subsequent raw reads don't bypass helpers
   try { runSettingsMigrationOnce() } catch (e) {}
   try {
@@ -47,6 +48,27 @@ const setStatus = (msg) => {
     setIfEmpty('homeworkouts_exec_url', cfg.execUrl || '')
     setIfEmpty('homeworkouts_token', cfg.token || '')
     setIfEmpty('homeworkouts_proxy_base', cfg.proxyBase || '')
+
+    // Allow runtime-provided Firebase client config (for prod hosting).
+    // This enables Google sign-in even when VITE_FIREBASE_* weren't set at build time.
+    try {
+      const fb = cfg.firebase || cfg.FIREBASE || null
+      if (fb && typeof fb === 'object') {
+        const setFbIfEmpty = (key, val) => {
+          try {
+            const cur = HOMEWORKOUTS_CONFIG.firebase[key]
+            if ((!cur || String(cur).trim() === '') && val) HOMEWORKOUTS_CONFIG.firebase[key] = val
+          } catch {}
+        }
+        setFbIfEmpty('apiKey', fb.apiKey || fb.api_key || '')
+        setFbIfEmpty('authDomain', fb.authDomain || fb.auth_domain || '')
+        setFbIfEmpty('projectId', fb.projectId || fb.project_id || '')
+        setFbIfEmpty('storageBucket', fb.storageBucket || fb.storage_bucket || '')
+        setFbIfEmpty('messagingSenderId', fb.messagingSenderId || fb.messaging_sender_id || '')
+        setFbIfEmpty('appId', fb.appId || fb.app_id || '')
+        setFbIfEmpty('measurementId', fb.measurementId || fb.measurement_id || '')
+      }
+    } catch {}
   } catch (e) {
     // ignore failures — app will fall back to built-in defaults or saved overrides
   }
@@ -234,7 +256,8 @@ root.innerHTML = `
   </div>
 `
 
-initAuth()
+// Auth must initialize after the optional /config.json runtime config has been applied.
+Promise.resolve(configReady).finally(() => initAuth())
 
 // setStatus is defined at module top to avoid race conditions; the auth
 // module may overwrite `window.setStatus` with a richer implementation.

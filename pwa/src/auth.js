@@ -270,6 +270,13 @@ function renderUser(user) {
   }
 }
 
+function getActiveEmail() {
+  const raw = (document.getElementById('user-email')?.textContent || '').trim()
+  const normalized = (raw && raw !== 'Not signed in') ? raw : ''
+  const stored = (localStorage.getItem('homeworkouts_user_email') || '').trim()
+  return normalized || stored || ''
+}
+
 export function initAuth() {
   // In CI / local dev without env vars, Firebase config may be empty.
   // Avoid initializing Firebase Auth in that case (it can throw auth/invalid-api-key).
@@ -307,11 +314,11 @@ export function initAuth() {
 
   // Expose loaders for Workout mode toggles
   window.homeworkoutsLoadStrength = () => {
-    const email = document.getElementById('user-email')?.textContent || ''
+    const email = getActiveEmail()
     if (email) loadWorkouts(email)
   }
   window.homeworkoutsLoadHiit = () => {
-    const email = document.getElementById('user-email')?.textContent || ''
+    const email = getActiveEmail()
     if (email) loadHiitWorkouts(email)
   }
 }
@@ -621,7 +628,7 @@ function renderWorkouts(items) {
             btn.onclick = async () => {
               const cards = Array.from(document.querySelectorAll('#workout-list .card'))
               if (!cards.length) return
-              const email = (document.getElementById('user-email')?.textContent || localStorage.getItem('homeworkouts_user_email') || '').trim()
+              const email = getActiveEmail()
               // Build a batch first (no UI changes yet)
               const pending = loadPending() || {}
               const batch = { email, items: [] }
@@ -1327,7 +1334,7 @@ function renderHiitRounds(items) {
         btn.onclick = async (ev) => {
           try { ev?.preventDefault?.() } catch {}
           try {
-            const email = (document.getElementById('user-email')?.textContent || localStorage.getItem('homeworkouts_user_email') || '').trim()
+              const email = getActiveEmail()
             const hiitItems = window.hiitItems || items || []
             const batch = { email, items: [] }
             for (const it of hiitItems) {
