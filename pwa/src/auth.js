@@ -271,6 +271,17 @@ function renderUser(user) {
 }
 
 export function initAuth() {
+  // In CI / local dev without env vars, Firebase config may be empty.
+  // Avoid initializing Firebase Auth in that case (it can throw auth/invalid-api-key).
+  const apiKey = HOMEWORKOUTS_CONFIG?.firebase?.apiKey
+  if (!apiKey || String(apiKey).trim() === '') {
+    console.warn('Firebase config missing: auth disabled')
+    try { setStatus('Auth disabled (missing Firebase config)') } catch {}
+    try { renderUser(null) } catch {}
+    try { window.homeworkoutsAuthDisabled = true } catch {}
+    return
+  }
+
   app = initializeApp(HOMEWORKOUTS_CONFIG.firebase)
   auth = getAuth(app)
   const provider = new GoogleAuthProvider()
