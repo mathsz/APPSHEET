@@ -40,7 +40,7 @@ jobs:
         run: npm --prefix pwa run build
 
   deploy-pwa:
-    name: Deploy PWA (optional)
+              node-version: '20'
     needs: test-build
     runs-on: ubuntu-latest
     steps:
@@ -57,7 +57,7 @@ jobs:
 
       - name: Deploy to Firebase Hosting (skips when secrets unset)
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+              node-version: '20'
           FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT }}
         run: |
           if [ -z "$FIREBASE_TOKEN" ] || [ -z "$FIREBASE_PROJECT" ]; then
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/staging' }}
     environment: staging
-    steps:
+              node-version: '20'
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -110,7 +110,7 @@ jobs:
             echo "Skipping staging Apps Script deploy because secrets are not set"
             exit 0
           fi
-          npm install -g @google/clasp
+              node-version: '20'
           printf "%s" "$GCP_SA_KEY_STAGING" > sa-key.json
           printf '{"scriptId":"%s"}' "$CLASP_SCRIPT_ID_STAGING" > .clasp.json
           npx clasp login --creds sa-key.json
