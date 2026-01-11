@@ -1,5 +1,5 @@
 {
-  "description": "Automation agent for Fitbook Apps Script",
+  "description": "Automation agent for HomeWorkouts Apps Script",
   "main_files": ["Code.gs", "appsscript.json"],
   "last_update": "2026-01-04T10:20:00Z",
   "notes": {
